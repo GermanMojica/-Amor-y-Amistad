@@ -1,0 +1,41 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model EventConfig {
+  id           Int      @id @default(1)
+  title        String   @default("Sorteo de Amor y Amistad ❤️")
+  state        String   @default("REGISTRATION") // "REGISTRATION", "READY", "DRAWING", "FINISHED"
+  adminPinHash String   @default("")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Participant {
+  id             String    @id @default(cuid())
+  name           String
+  nickname       String?
+  normalizedName String    @unique
+  pinHash        String    // Hash del PIN de seguridad de 4 dígitos
+  drawCompleted  Boolean   @default(false)
+  revealedAt     DateTime?
+  createdAt      DateTime  @default(now())
+
+  // Relaciones 1-a-1 exclusivas para el sorteo
+  giverAssignment   DrawAssignment? @relation("GiverAssignment")
+  receiverAssignment DrawAssignment? @relation("ReceiverAssignment")
+}
+
+model DrawAssignment {
+  id         String      @id @default(cuid())
+  giverId    String      @unique
+  receiverId String      @unique
+  giver      Participant @relation("GiverAssignment", fields: [giverId], references: [id], onDelete: Cascade)
+  receiver   Participant @relation("ReceiverAssignment", fields: [receiverId], references: [id], onDelete: Cascade)
+  createdAt  DateTime    @default(now())
+}
