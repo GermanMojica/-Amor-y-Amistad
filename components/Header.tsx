@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Lock, Sparkles, Heart } from "lucide-react";
+import { Lock, UserPlus, Clock, Sparkles, CheckCircle2 } from "lucide-react";
 
 interface HeaderProps {
   state: "REGISTRATION" | "READY" | "DRAWING" | "FINISHED";
@@ -20,28 +20,33 @@ export default function Header({
     switch (state) {
       case "REGISTRATION":
         return {
-          className: "brand-badge",
-          text: `📝 Registro abierto • ${participantCount} registrados`,
+          className: "brand-badge registration",
+          icon: <UserPlus size={14} />,
+          text: `Registro abierto (${participantCount} registrados)`,
         };
       case "READY":
         return {
           className: "brand-badge ready",
-          text: `🎁 ¡Listo! • ${participantCount} participantes`,
+          icon: <Clock size={14} />,
+          text: `Listo para sortear (${participantCount} participantes)`,
         };
       case "DRAWING":
         return {
           className: "brand-badge drawing",
-          text: `🎲 Descubriendo (${revealedCount}/${participantCount})`,
+          icon: <Sparkles size={14} />,
+          text: `Sorteo en curso (${revealedCount} de ${participantCount} consultados)`,
         };
       case "FINISHED":
         return {
           className: "brand-badge finished",
-          text: `🎉 Sorteo Completado (${participantCount}/${participantCount})`,
+          icon: <CheckCircle2 size={14} />,
+          text: `Sorteo completado (${participantCount} participantes)`,
         };
       default:
         return {
           className: "brand-badge",
-          text: "Amor y Amistad",
+          icon: null,
+          text: "Amigo Secreto",
         };
     }
   };
@@ -51,6 +56,7 @@ export default function Header({
   return (
     <header className="header-bar">
       <div className={badge.className}>
+        {badge.icon}
         <span>{badge.text}</span>
       </div>
 
@@ -58,10 +64,10 @@ export default function Header({
         type="button"
         onClick={onOpenAdmin}
         className="btn-icon"
-        title="Panel del Organizador"
+        title="Panel de administración"
         aria-label="Acceso Organizador"
       >
-        <Lock size={16} />
+        <Lock size={15} />
       </button>
     </header>
   );

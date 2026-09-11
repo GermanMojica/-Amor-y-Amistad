@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAdminAuth, getOrCreateEventConfig } from "@/lib/auth";
+import { verifyAdminAuth } from "@/lib/auth";
+import {
+  getOrCreateConfig,
+  getAdminParticipantsList,
+  deleteParticipantById,
+  getParticipantStats,
+} from "@/lib/dataService";
 
 export const dynamic = "force-dynamic";
 
@@ -11,18 +16,7 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
     }
 
-    const participants = await prisma.participant.findMany({
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        normalizedName: true,
-        drawCompleted: true,
-        revealedAt: true,
-        createdAt: true,
-      },
-      orderBy: { createdAt: "asc" },
-    });
+    const participants = await getAdminParticipantsList();
 
     return NextResponse.json({
       success: true,
@@ -44,7 +38,7 @@ export async function DELETE(req: NextRequest) {
       return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
     }
 
-    const config = await getOrCreateEventConfig();
+    const config = await getOrCreateConfig();
     if (config.state === "DRAWING" || config.state === "FINISHED") {
       return NextResponse.json(
         {
@@ -65,16 +59,13 @@ export async function DELETE(req: NextRequest) {
       );
     }
 
-    await prisma.participant.delete({
-      where: { id: participantId },
-    });
-
-    const remainingCount = await prisma.participant.count();
+    await deleteParticipantById(participantId);
+    const stats = await getParticipantStats();
 
     return NextResponse.json({
       success: true,
       message: "Participante eliminado correctamente.",
-      participantCount: remainingCount,
+      participantCount: stats.total,
     });
   } catch (error) {
     console.error("Error al eliminar participante (admin):", error);

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAdminAuth, getOrCreateEventConfig } from "@/lib/auth";
+import { verifyAdminAuth } from "@/lib/auth";
+import { getPublicParticipantsList, persistDrawAssignments } from "@/lib/dataService";
 import { generateDerangement, validateDrawAssignments } from "@/lib/drawAlgorithm";
 
 export const dynamic = "force-dynamic";
@@ -12,12 +12,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
     }
 
-    const config = await getOrCreateEventConfig();
-
-    // Obtener todos los participantes
-    const participants = await prisma.participant.findMany({
-      select: { id: true, name: true },
-    });
+    const participants = await getPublicParticipantsList();
 
     if (participants.length < 2) {
       return NextResponse.json(
@@ -31,7 +26,7 @@ export async function POST(req: NextRequest) {
 
     const participantIds = participants.map((p) => p.id);
 
-    // Generar el desarreglo matemático garantizado
+    // Generar desarreglo matemático
     const assignments = generateDerangement(participantIds);
 
     // Validación formal
@@ -46,39 +41,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Guardar atómicamente en la base de datos dentro de una transacción
-    await prisma.$transaction(async (tx) => {
-      // 1. Limpiar asignaciones previas si existieran
-      await tx.drawAssignment.deleteMany();
-
-      // 2. Resetear drawCompleted en participantes
-      await tx.participant.updateMany({
-        data: {
-          drawCompleted: false,
-          revealedAt: null,
-        },
-      });
-
-      // 3. Crear nuevas asignaciones
-      for (const pair of assignments) {
-        await tx.drawAssignment.create({
-          data: {
-            giverId: pair.giverId,
-            receiverId: pair.receiverId,
-          },
-        });
-      }
-
-      // 4. Actualizar estado a DRAWING
-      await tx.eventConfig.update({
-        where: { id: config.id },
-        data: { state: "DRAWING" },
-      });
-    });
+    // Persistir asignaciones
+    await persistDrawAssignments(assignments);
 
     return NextResponse.json({
       success: true,
-      message: `¡Sorteo generado con éxito para ${participants.length} participantes! 🎁`,
+      message: `Sorteo generado con éxito para ${participants.length} participantes.`,
       state: "DRAWING",
       participantCount: participants.length,
     });

@@ -1,47 +1,48 @@
-# Sorteo de Amor y Amistad ❤️🎁
+# Sorteo de Amigo Secreto
 
-Aplicación web moderna, segura, mobile-first y lista para producción en **Vercel** para realizar sorteos de *Amor y Amistad* / *Amigo Secreto*.
+Aplicación web moderna, segura, responsive (mobile-first) y lista para producción en **Vercel** para realizar sorteos de **Amigo Secreto** con sugerencias personalizadas de regalos (*qué te gusta / qué no te gusta*).
 
-![Sorteo de Amor y Amistad Banner](/public/og-image.jpg)
+![Sorteo de Amigo Secreto Banner](/public/og-image.jpg)
 
 ---
 
-## 🌟 Características Principales
+## Características Principales
 
 1. **Enlace Único y Estados Globales**:
-   - `REGISTRATION`: Registro abierto para que los participantes se unan.
-   - `READY`: Registro cerrado, listo para sortear.
-   - `DRAWING`: Sorteo activo; cada persona consulta su amigo secreto de manera privada.
-   - `FINISHED`: Todos los participantes han descubierto su amigo secreto.
-2. **Prevención Estricta de Nombres Duplicados**:
-   - Normalización canónica (eliminación de espacios múltiples, acentos y mayúsculas: `"Juan Pérez"` == `"  juan   perez  "` == `"JUAN PÉREZ"`).
+   - `REGISTRATION`: Registro abierto para que los participantes se unan y dejen sus preferencias de regalo.
+   - `READY`: Registro cerrado por el organizador, listo para generar asignaciones.
+   - `DRAWING`: Sorteo activo; cada persona consulta su asignación de forma 100% privada.
+   - `FINISHED`: Todos los participantes han consultado su amigo secreto.
+2. **Sugerencias y Pistas de Regalo Personalizadas (`giftNotes`)**:
+   - Al registrarse, cada participante puede detallar qué le gusta, qué no le gusta, tallas o preferencias.
+   - Al consultar su resultado, la persona asignada recibe la tarjeta con el nombre y la sección destacada de sugerencias de regalo.
+3. **Prevención Estricta de Nombres Duplicados**:
+   - Normalización canónica (eliminación de espacios redundantes, acentos y mayúsculas: `"Juan Pérez"` == `"  juan   perez  "` == `"JUAN PÉREZ"`).
    - Doble validación en frontend y restricción `@unique` a nivel de base de datos.
-3. **Autenticación Segura de Participantes (PIN Secreto)**:
+4. **Autenticación Segura de Participantes (PIN Secreto)**:
    - Cada participante define un **PIN de 4 dígitos** al registrarse.
-   - Para descubrir su amigo secreto, debe ingresar su PIN.
-   - **Garantía de privacidad**: Nadie puede ver el amigo secreto de otra persona alterando IDs o URLs.
-4. **Algoritmo Matemático de Sorteo (Desarreglo / Derangement)**:
+   - Para consultar su asignación, debe ingresar su PIN personal.
+   - **Privacidad garantizada**: Ningún usuario puede ver el resultado de otra persona alterando IDs o URLs.
+5. **Algoritmo Matemático de Sorteo (Desarreglo / Derangement)**:
    - **Regla 1**: Nadie puede sacar su propio nombre ($P(i) \neq i$).
    - **Regla 2**: Cada participante da a exactamente 1 persona.
    - **Regla 3**: Cada persona recibe de exactamente 1 participante.
    - **Regla 4**: Para $N$ participantes existen exactamente $N$ asignaciones biyectivas.
    - **Regla 5**: Generación atómica en backend (`prisma.$transaction`) persistida en base de datos.
-5. **Panel del Organizador Protegido**:
-   - Acceso discreto mediante PIN de Administrador.
-   - Gestión de participantes (ver lista y eliminar participantes no deseados).
-   - Control de fases y disparador de sorteo.
-   - Opción de reiniciar sorteo con confirmación segura.
-   - Botón para copiar y compartir el link por WhatsApp.
-6. **Diseño Visual & Experiencia Móvil**:
-   - Paleta temática: Rubí, Oro Rosa, Oro Champán y Terciopelo Oscuro.
-   - Efecto Glassmorphism con micro-interacciones.
-   - Fondo con corazones flotantes animados.
-   - Animación 3D de caja de regalo con lazo dorado y explosión de confeti (`canvas-confetti`).
-   - Optimizado para WhatsApp con tarjetas OpenGraph y Favicon SVG.
+6. **Panel de Administración Protegido**:
+   - Acceso discreto mediante PIN de Administrador (por defecto `2026`).
+   - Gestión de participantes (ver lista, sugerencias de regalo y eliminar participantes).
+   - Control de fases y ejecución del sorteo.
+   - Opción de reiniciar sorteo con modal de confirmación.
+   - Botón para copiar el enlace de acceso público.
+7. **Diseño Visual & Experiencia Móvil**:
+   - Paleta sobria y moderna en modo oscuro: Grafito, Índigo y Acentos Carmesí con efectos *Glassmorphism*.
+   - Partículas de iluminación ambiental sutiles.
+   - Optimizado para móviles y compatible con previsualizaciones Open Graph.
 
 ---
 
-## 🚀 Instalación y Desarrollo Local
+## Instalación y Desarrollo Local
 
 ### 1. Clonar o ingresar al proyecto
 ```bash
@@ -75,11 +76,11 @@ npx prisma db push
 ```bash
 npm run dev
 ```
-Abre en tu navegador: [http://localhost:3000](http://localhost:3000) (o el puerto indicado en la terminal).
+Abre en tu navegador: [http://localhost:3000](http://localhost:3000).
 
 ---
 
-## 🧪 Pruebas Automatizadas
+## Pruebas Automatizadas
 
 El proyecto incluye 3 suites de pruebas automatizadas:
 
@@ -96,14 +97,14 @@ node tests/e2e-api-flow.mjs
 ```
 
 ### 3. Prueba de Concurrencia y Sorteos Simultáneos
-Simula 10 participantes abriendo sus sobres exactamente en el mismo milisegundo mediante `Promise.all`:
+Simula 10 participantes consultando sus asignaciones simultáneamente mediante `Promise.all`:
 ```bash
 node tests/concurrency-test.mjs
 ```
 
 ---
 
-## 🌐 Despliegue en Producción (Vercel)
+## Despliegue en Producción (Vercel)
 
 Para desplegar en Vercel con una base de datos PostgreSQL Serverless (Neon, Supabase o Vercel Postgres):
 
@@ -123,14 +124,14 @@ datasource db {
 ### Paso 3: Subir a GitHub y Vercel
 1. Conecta tu repositorio de GitHub en [Vercel](https://vercel.com).
 2. En la pestaña **Environment Variables** de Vercel, agrega:
-   - `DATABASE_URL`: Tu conexión de PostgreSQL.
-   - `ADMIN_SECRET_PIN`: El PIN que usarás como organizador (ej: `2026`).
-   - `NEXT_PUBLIC_APP_URL`: La URL de tu app en Vercel (ej: `https://mi-sorteo.vercel.app`).
+   - `DATABASE_URL`: Tu cadena de conexión PostgreSQL.
+   - `ADMIN_SECRET_PIN`: El PIN de administración (ej: `2026`).
+   - `NEXT_PUBLIC_APP_URL`: La URL pública de tu app en Vercel.
 3. Haz clic en **Deploy**.
 
 ---
 
-## 📁 Estructura del Proyecto
+## Estructura del Proyecto
 
 ```
 ├── app/
@@ -140,22 +141,22 @@ datasource db {
 │   │   ├── admin/participants/  # Listado y eliminación de participantes
 │   │   ├── admin/reset/         # Reinicio seguro del sorteo
 │   │   ├── admin/state/         # Transiciones de estado
-│   │   ├── draw/reveal/         # Revelación segura con PIN
+│   │   ├── draw/reveal/         # Revelación segura con PIN y notas de regalo
 │   │   ├── participants/list-public/ # Lista pública sanitizada
-│   │   ├── participants/register/    # Registro con validación anti-duplicados
+│   │   ├── participants/register/    # Registro con validación anti-duplicados y notas
 │   │   └── state/               # Estado global y conteos
-│   ├── globals.css              # Sistema de diseño, glassmorphism y animaciones
-│   ├── icon.svg                 # Ícono SVG temático
-│   ├── layout.tsx               # Metadatos SEO, OpenGraph y partículas flotantes
+│   ├── globals.css              # Sistema de diseño sobrio sin emojis
+│   ├── icon.svg                 # Ícono SVG minimalista
+│   ├── layout.tsx               # Metadatos SEO, OpenGraph y partículas luminosas
 │   └── page.tsx                 # Controlador de vistas según estado
 ├── components/
 │   ├── AdminModal.tsx           # Panel de control protegido del organizador
-│   ├── DrawingView.tsx          # Vista de apertura de sobre con PIN y confeti
+│   ├── AmbientParticles.tsx     # Partículas de luz ambiental
+│   ├── DrawingView.tsx          # Vista de consulta con PIN y notas
 │   ├── FinishedView.tsx         # Vista de sorteo finalizado
-│   ├── FloatingHearts.tsx       # Corazones animados en segundo plano
 │   ├── Header.tsx               # Cabecera con estado en vivo y acceso admin
 │   ├── ReadyView.tsx            # Vista de espera previo al sorteo
-│   └── RegistrationView.tsx     # Formulario de registro y tarjeta de éxito
+│   └── RegistrationView.tsx     # Formulario de registro con notas de regalo
 ├── lib/
 │   ├── auth.ts                  # Helpers de autenticación administrativa
 │   ├── crypto.ts                # Hasheo de PINs con bcrypt y números aleatorios seguros
@@ -166,15 +167,7 @@ datasource db {
 │   └── schema.prisma            # Modelos EventConfig, Participant y DrawAssignment
 ├── tests/
 │   ├── run-tests.mjs            # Tests unitarios y Monte Carlo 1,000 iteraciones
-│   ├── e2e-api-flow.mjs         # Test integral de endpoints
+│   ├── e2e-api-flow.mjs         # Test integral de endpoints y notas de regalo
 │   └── concurrency-test.mjs     # Test de alta concurrencia
 └── package.json
 ```
-
----
-
-## 🔒 Seguridad y Privacidad
-
-- **Zero-Leakage Architecture**: Las asignaciones entre participantes se calculan y almacenan únicamente en backend y **nunca** se envían en masa al cliente.
-- **PIN Hashing**: Los PINs de los participantes se hashean usando `bcrypt` antes de guardarse en base de datos.
-- **Transacciones Atómicas**: Las asignaciones del sorteo y los reinicios se ejecutan dentro de transacciones de base de datos para evitar estados corruptos o inconsistencias.

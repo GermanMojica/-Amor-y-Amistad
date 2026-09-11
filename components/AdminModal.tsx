@@ -1,10 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   X,
-  Lock,
-  Users,
   Trash2,
   Play,
   RotateCcw,
@@ -14,6 +12,7 @@ import {
   Share2,
   Check,
   ShieldCheck,
+  Info,
 } from "lucide-react";
 
 interface AdminModalProps {
@@ -26,7 +25,7 @@ interface AdminModalProps {
 interface AdminParticipant {
   id: string;
   name: string;
-  nickname: string | null;
+  giftNotes: string | null;
   normalizedName: string;
   drawCompleted: boolean;
   revealedAt: string | null;
@@ -49,7 +48,6 @@ export default function AdminModal({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
 
-  // Intentar cargar la sesión si ya tenemos el PIN guardado en memoria durante la sesión
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
@@ -137,7 +135,7 @@ export default function AdminModal({
 
       const data = await res.json();
       if (data.success) {
-        setSuccessMessage(`Estado cambiado a ${newState}.`);
+        setSuccessMessage(`Estado actualizado a ${newState}.`);
         onStateChange();
       } else {
         setErrorMessage(data.error || "No se pudo cambiar el estado.");
@@ -225,8 +223,8 @@ export default function AdminModal({
         {/* Encabezado */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-            <ShieldCheck size={22} color="#F59E0B" />
-            <h2 style={{ fontSize: "1.35rem", color: "#FFFFFF" }}>Panel del Organizador</h2>
+            <ShieldCheck size={20} color="#F43F5E" />
+            <h2 style={{ fontSize: "1.25rem", color: "#FFFFFF" }}>Panel de Administración</h2>
           </div>
           <button
             type="button"
@@ -234,29 +232,28 @@ export default function AdminModal({
             className="btn-icon"
             style={{ width: "32px", height: "32px" }}
           >
-            <X size={18} />
+            <X size={16} />
           </button>
         </div>
 
         {errorMessage && (
           <div className="alert alert-error">
-            <AlertTriangle size={18} style={{ flexShrink: 0 }} />
+            <AlertTriangle size={16} style={{ flexShrink: 0 }} />
             <span>{errorMessage}</span>
           </div>
         )}
 
         {successMessage && (
           <div className="alert alert-success">
-            <CheckCircle2 size={18} style={{ flexShrink: 0 }} />
+            <CheckCircle2 size={16} style={{ flexShrink: 0 }} />
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Pantalla de autenticación inicial */}
         {!isAuthenticated ? (
           <form onSubmit={handleAuth}>
-            <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem", marginBottom: "1rem" }}>
-              Ingresa el PIN de organizador para administrar el sorteo.
+            <p style={{ color: "var(--color-text-muted)", fontSize: "0.88rem", marginBottom: "1.25rem" }}>
+              Ingresa el PIN de organizador para gestionar el sorteo.
             </p>
 
             <div className="form-group">
@@ -267,7 +264,7 @@ export default function AdminModal({
                 id="adminPinInput"
                 type="password"
                 className="form-input"
-                placeholder="Ingresa el PIN secreto"
+                placeholder="Ingresa el PIN maestro"
                 value={adminPin}
                 onChange={(e) => setAdminPin(e.target.value)}
                 autoFocus
@@ -276,25 +273,24 @@ export default function AdminModal({
             </div>
 
             <button type="submit" className="btn-primary" disabled={loading || !adminPin.trim()}>
-              {loading ? "Verificando..." : "Acceder al Panel"}
+              {loading ? "Validando..." : "Ingresar"}
             </button>
           </form>
         ) : (
-          /* Panel de Control una vez autenticado */
           <div>
-            {/* Estado actual & Compartir Link */}
+            {/* Estado actual & Compartir */}
             <div
               style={{
-                background: "rgba(255,255,255,0.04)",
+                background: "rgba(255,255,255,0.03)",
                 padding: "1rem",
                 borderRadius: "var(--radius-md)",
                 border: "1px solid var(--color-border)",
                 marginBottom: "1.25rem",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.5rem" }}>
-                <span style={{ fontSize: "0.85rem", color: "var(--color-text-subtle)" }}>Estado actual:</span>
-                <span style={{ fontWeight: 700, color: "var(--color-accent-gold-light)", fontSize: "0.9rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem" }}>
+                <span style={{ fontSize: "0.82rem", color: "var(--color-text-subtle)" }}>Estado actual:</span>
+                <span style={{ fontWeight: 600, color: "#F8FAFC", fontSize: "0.85rem" }}>
                   {currentState}
                 </span>
               </div>
@@ -303,17 +299,17 @@ export default function AdminModal({
                 type="button"
                 onClick={handleCopyLink}
                 className="btn-secondary"
-                style={{ fontSize: "0.85rem", padding: "0.5rem" }}
+                style={{ fontSize: "0.85rem", padding: "0.55rem" }}
               >
-                {copiedLink ? <Check size={16} color="#34D399" /> : <Share2 size={16} />}
-                <span>{copiedLink ? "¡Link copiado al portapapeles!" : "Copiar link público para compartir"}</span>
+                {copiedLink ? <Check size={15} color="#34D399" /> : <Share2 size={15} />}
+                <span>{copiedLink ? "Enlace copiado" : "Copiar enlace de acceso público"}</span>
               </button>
             </div>
 
-            {/* Acciones por Estado */}
+            {/* Acciones */}
             <div style={{ marginBottom: "1.5rem" }}>
-              <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", fontWeight: 600, marginBottom: "0.5rem" }}>
-                ACCIONES DE FASE:
+              <p style={{ fontSize: "0.8rem", color: "var(--color-text-muted)", fontWeight: 600, marginBottom: "0.5rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                Acciones de Fase
               </p>
 
               {currentState === "REGISTRATION" && (
@@ -322,10 +318,10 @@ export default function AdminModal({
                   onClick={() => handleUpdateState("READY")}
                   className="btn-primary"
                   disabled={loading || participants.length < 2}
-                  style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", color: "#000" }}
+                  style={{ background: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)", color: "#0F172A" }}
                 >
-                  <Sparkles size={18} />
-                  <span>Cerrar Registro y Pasar a «LISTO» ({participants.length} personas)</span>
+                  <Sparkles size={16} />
+                  <span>Cerrar Registro y Pasar a «LISTO» ({participants.length})</span>
                 </button>
               )}
 
@@ -337,8 +333,8 @@ export default function AdminModal({
                     className="btn-primary"
                     disabled={loading || participants.length < 2}
                   >
-                    <Play size={18} />
-                    <span>🎲 Realizar Sorteo y Habilitar Descubrimiento</span>
+                    <Play size={16} />
+                    <span>Realizar Sorteo y Habilitar Consultas</span>
                   </button>
 
                   <button
@@ -361,24 +357,24 @@ export default function AdminModal({
                       className="btn-primary btn-danger"
                       disabled={loading}
                     >
-                      <RotateCcw size={18} />
+                      <RotateCcw size={16} />
                       <span>Reiniciar Sorteo</span>
                     </button>
                   ) : (
                     <div
                       style={{
-                        background: "rgba(159, 18, 57, 0.3)",
-                        border: "1px solid rgba(225, 29, 72, 0.5)",
+                        background: "rgba(159, 18, 57, 0.15)",
+                        border: "1px solid rgba(225, 29, 72, 0.35)",
                         padding: "1rem",
                         borderRadius: "var(--radius-md)",
                         textAlign: "center",
                       }}
                     >
-                      <p style={{ color: "#FFFFFF", fontWeight: 700, fontSize: "0.95rem", marginBottom: "0.4rem" }}>
-                        ⚠️ ¿Estás seguro de reiniciar el sorteo?
+                      <p style={{ color: "#FFFFFF", fontWeight: 600, fontSize: "0.9rem", marginBottom: "0.3rem" }}>
+                        Confirmar reinicio de sorteo
                       </p>
-                      <p style={{ color: "#FDA4AF", fontSize: "0.82rem", marginBottom: "0.85rem" }}>
-                        Esta acción eliminará todas las asignaciones secretas actuales y volverá a la fase de registro.
+                      <p style={{ color: "#FDA4AF", fontSize: "0.8rem", marginBottom: "0.85rem" }}>
+                        Esta acción eliminará las asignaciones generadas y devolverá el sorteo a la fase de registro.
                       </p>
                       <div style={{ display: "flex", gap: "0.5rem" }}>
                         <button
@@ -396,7 +392,7 @@ export default function AdminModal({
                           style={{ flex: 1, background: "#BE123C" }}
                           disabled={loading}
                         >
-                          {loading ? "Reiniciando..." : "Sí, Reiniciar"}
+                          {loading ? "Reiniciando..." : "Confirmar"}
                         </button>
                       </div>
                     </div>
@@ -405,61 +401,76 @@ export default function AdminModal({
               )}
             </div>
 
-            {/* Lista de Participantes */}
+            {/* Participantes */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
-                <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#FFFFFF" }}>
-                  👥 Participantes ({participants.length})
+                <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#FFFFFF" }}>
+                  Participantes ({participants.length})
                 </span>
-                <span style={{ fontSize: "0.78rem", color: "var(--color-text-subtle)" }}>
-                  {participants.filter((p) => p.drawCompleted).length} ya descubrieron su amigo
+                <span style={{ fontSize: "0.75rem", color: "var(--color-text-subtle)" }}>
+                  {participants.filter((p) => p.drawCompleted).length} consultaron su asignación
                 </span>
               </div>
 
               {participants.length === 0 ? (
-                <p style={{ fontSize: "0.85rem", color: "var(--color-text-subtle)", textAlign: "center", padding: "1.5rem" }}>
+                <p style={{ fontSize: "0.82rem", color: "var(--color-text-subtle)", textAlign: "center", padding: "1.5rem" }}>
                   No hay participantes registrados todavía.
                 </p>
               ) : (
-                <div style={{ maxHeight: "240px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                <div style={{ maxHeight: "220px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
                   {participants.map((p) => (
                     <div
                       key={p.id}
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        padding: "0.6rem 0.85rem",
+                        padding: "0.65rem 0.8rem",
                         background: "rgba(0,0,0,0.3)",
                         borderRadius: "var(--radius-sm)",
-                        border: "1px solid rgba(255,255,255,0.05)",
+                        border: "1px solid rgba(255,255,255,0.04)",
                       }}
                     >
-                      <div>
-                        <p style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.9rem" }}>
-                          {p.name} {p.nickname ? `(${p.nickname})` : ""}
-                        </p>
-                        <p style={{ fontSize: "0.75rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
-                          {p.drawCompleted ? "✓ Descubrió su resultado" : "⏳ Pendiente"}
-                        </p>
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div>
+                          <p style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.88rem" }}>
+                            {p.name}
+                          </p>
+                          <p style={{ fontSize: "0.75rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
+                            {p.drawCompleted ? "Asignación consultada" : "Pendiente de consultar"}
+                          </p>
+                        </div>
+
+                        {currentState === "REGISTRATION" || currentState === "READY" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteParticipant(p.id, p.name)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#FDA4AF",
+                              cursor: "pointer",
+                              padding: "4px",
+                            }}
+                            title="Eliminar participante"
+                          >
+                            <Trash2 size={15} />
+                          </button>
+                        ) : null}
                       </div>
 
-                      {currentState === "REGISTRATION" || currentState === "READY" ? (
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteParticipant(p.id, p.name)}
+                      {p.giftNotes && (
+                        <div
                           style={{
-                            background: "none",
-                            border: "none",
-                            color: "#FDA4AF",
-                            cursor: "pointer",
-                            padding: "6px",
+                            marginTop: "0.35rem",
+                            fontSize: "0.76rem",
+                            color: "var(--color-text-muted)",
+                            background: "rgba(255,255,255,0.02)",
+                            padding: "0.3rem 0.5rem",
+                            borderRadius: "4px",
                           }}
-                          title="Eliminar participante"
                         >
-                          <Trash2 size={16} />
-                        </button>
-                      ) : null}
+                          <Info size={12} style={{ display: "inline", marginRight: "4px", verticalAlign: "middle" }} />
+                          <em>"{p.giftNotes}"</em>
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>

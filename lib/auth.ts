@@ -15,7 +15,7 @@ export async function getOrCreateEventConfig() {
     config = await prisma.eventConfig.create({
       data: {
         id: 1,
-        title: "Sorteo de Amor y Amistad ❤️",
+        title: "Sorteo de Amigo Secreto",
         state: "REGISTRATION",
         adminPinHash: defaultHash,
       },

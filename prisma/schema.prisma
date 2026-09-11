@@ -9,7 +9,7 @@ generator client {
 
 model EventConfig {
   id           Int      @id @default(1)
-  title        String   @default("Sorteo de Amor y Amistad ❤️")
+  title        String   @default("Sorteo de Amigo Secreto")
   state        String   @default("REGISTRATION") // "REGISTRATION", "READY", "DRAWING", "FINISHED"
   adminPinHash String   @default("")
   createdAt    DateTime @default(now())
@@ -19,7 +19,7 @@ model EventConfig {
 model Participant {
   id             String    @id @default(cuid())
   name           String
-  nickname       String?
+  giftNotes      String?   // Gustos, preferencias, qué le gusta o qué no le gusta
   normalizedName String    @unique
   pinHash        String    // Hash del PIN de seguridad de 4 dígitos
   drawCompleted  Boolean   @default(false)

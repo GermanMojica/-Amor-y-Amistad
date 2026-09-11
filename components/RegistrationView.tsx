@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Heart, UserCheck, AlertCircle, Sparkles, CheckCircle2, LockKeyhole } from "lucide-react";
+import { Gift, Sparkles, CheckCircle2, AlertCircle, Info, KeyRound } from "lucide-react";
 import { isValidName, isValidPin } from "@/lib/normalization";
 import confetti from "canvas-confetti";
 
@@ -15,13 +15,13 @@ export default function RegistrationView({
   onParticipantRegistered,
 }: RegistrationViewProps) {
   const [name, setName] = useState("");
-  const [nickname, setNickname] = useState("");
+  const [giftNotes, setGiftNotes] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [registeredUser, setRegisteredUser] = useState<{
     name: string;
-    nickname?: string | null;
+    giftNotes?: string | null;
   } | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -37,7 +37,7 @@ export default function RegistrationView({
 
     const pinCheck = isValidPin(pin);
     if (!pinCheck.valid) {
-      setErrorMessage(pinCheck.error || "El PIN debe tener 4 dígitos.");
+      setErrorMessage(pinCheck.error || "El PIN debe tener 4 dígitos numéricos.");
       return;
     }
 
@@ -49,7 +49,7 @@ export default function RegistrationView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
-          nickname: nickname.trim() || undefined,
+          giftNotes: giftNotes.trim() || undefined,
           pin: pin.trim(),
         }),
       });
@@ -62,17 +62,17 @@ export default function RegistrationView({
         return;
       }
 
-      // Celebración con confeti
+      // Celebración con confeti sutil
       confetti({
-        particleCount: 80,
-        spread: 70,
+        particleCount: 70,
+        spread: 60,
         origin: { y: 0.6 },
-        colors: ["#E11D48", "#FDA4AF", "#F59E0B", "#FFFFFF"],
+        colors: ["#E11D48", "#6366F1", "#FDA4AF", "#FFFFFF"],
       });
 
       setRegisteredUser({
         name: data.participant.name,
-        nickname: data.participant.nickname,
+        giftNotes: data.participant.giftNotes,
       });
 
       onParticipantRegistered();
@@ -86,7 +86,7 @@ export default function RegistrationView({
 
   const handleRegisterAnother = () => {
     setName("");
-    setNickname("");
+    setGiftNotes("");
     setPin("");
     setErrorMessage(null);
     setRegisteredUser(null);
@@ -94,27 +94,27 @@ export default function RegistrationView({
 
   return (
     <div className="glass-card">
-      <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+      <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
         <div
           style={{
             display: "inline-flex",
             alignItems: "center",
             justifyContent: "center",
-            width: "56px",
-            height: "56px",
-            borderRadius: "50%",
-            background: "linear-gradient(135deg, rgba(225, 29, 72, 0.2), rgba(245, 158, 11, 0.15))",
-            border: "1px solid rgba(244, 63, 94, 0.3)",
-            marginBottom: "0.85rem",
+            width: "52px",
+            height: "52px",
+            borderRadius: "14px",
+            background: "linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(99, 102, 241, 0.15))",
+            border: "1px solid rgba(255, 255, 255, 0.1)",
+            marginBottom: "1rem",
           }}
         >
-          <Heart size={28} color="#FDA4AF" fill="#E11D48" />
+          <Gift size={24} color="#FDA4AF" />
         </div>
 
-        <h1 style={{ fontSize: "1.85rem", color: "#FFFFFF", marginBottom: "0.4rem" }}>
-          Sorteo de Amor y Amistad ❤️
+        <h1 style={{ fontSize: "1.75rem", color: "#FFFFFF", marginBottom: "0.35rem" }}>
+          Sorteo de Amigo Secreto
         </h1>
-        <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem" }}>
+        <p style={{ color: "var(--color-text-muted)", fontSize: "0.92rem" }}>
           Regístrate para participar en el sorteo.
         </p>
       </div>
@@ -123,39 +123,68 @@ export default function RegistrationView({
         <div style={{ textAlign: "center", animation: "slideUp 0.3s ease-out" }}>
           <div
             style={{
-              background: "rgba(16, 185, 129, 0.12)",
-              border: "1px solid rgba(16, 185, 129, 0.3)",
+              background: "rgba(16, 185, 129, 0.08)",
+              border: "1px solid rgba(16, 185, 129, 0.25)",
               borderRadius: "var(--radius-md)",
               padding: "1.5rem",
               marginBottom: "1.5rem",
             }}
           >
             <CheckCircle2
-              size={48}
+              size={44}
               color="#34D399"
               style={{ margin: "0 auto 0.75rem auto", display: "block" }}
             />
-            <h2 style={{ fontSize: "1.4rem", color: "#FFFFFF", marginBottom: "0.4rem" }}>
-              ❤️ ¡Ya estás dentro del sorteo!
+            <h2 style={{ fontSize: "1.3rem", color: "#FFFFFF", marginBottom: "0.4rem" }}>
+              Registro completado con éxito
             </h2>
-            <p style={{ fontSize: "1.1rem", fontWeight: "700", color: "var(--color-accent-gold-light)" }}>
-              {registeredUser.name} {registeredUser.nickname ? `(${registeredUser.nickname})` : ""}
+            <p style={{ fontSize: "1.15rem", fontWeight: "700", color: "#F8FAFC" }}>
+              {registeredUser.name}
             </p>
+
+            {registeredUser.giftNotes && (
+              <div
+                style={{
+                  marginTop: "0.85rem",
+                  padding: "0.75rem 1rem",
+                  background: "rgba(0,0,0,0.3)",
+                  borderRadius: "var(--radius-sm)",
+                  fontSize: "0.85rem",
+                  color: "#FDA4AF",
+                  textAlign: "left",
+                }}
+              >
+                <span style={{ fontWeight: 600, color: "var(--color-text-muted)" }}>
+                  Tus preferencias guardadas:
+                </span>
+                <p style={{ marginTop: "0.25rem", color: "#F1F5F9", fontStyle: "italic" }}>
+                  "{registeredUser.giftNotes}"
+                </p>
+              </div>
+            )}
+
             <div
               style={{
                 marginTop: "1rem",
-                padding: "0.75rem",
+                padding: "0.75rem 1rem",
                 background: "rgba(0,0,0,0.3)",
                 borderRadius: "var(--radius-sm)",
-                fontSize: "0.85rem",
+                fontSize: "0.82rem",
                 color: "var(--color-text-muted)",
+                display: "flex",
+                alignItems: "flex-start",
+                gap: "0.5rem",
+                textAlign: "left",
               }}
             >
-              🔒 <strong>Recuerda tu PIN de 4 dígitos:</strong> Lo necesitarás cuando el organizador active el sorteo para descubrir a tu amigo secreto.
+              <KeyRound size={16} style={{ flexShrink: 0, marginTop: "2px", color: "var(--color-accent-light)" }} />
+              <span>
+                <strong>Importante:</strong> Guarda tu PIN de 4 dígitos. Lo necesitarás para consultar a tu amigo secreto una vez que inicie el sorteo.
+              </span>
             </div>
           </div>
 
-          <p style={{ fontSize: "0.9rem", color: "var(--color-text-subtle)", marginBottom: "1.5rem" }}>
+          <p style={{ fontSize: "0.88rem", color: "var(--color-text-subtle)", marginBottom: "1.5rem" }}>
             El organizador habilitará el sorteo cuando todos los participantes estén registrados.
           </p>
 
@@ -195,24 +224,38 @@ export default function RegistrationView({
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="nickname">
-              Apodo o nombre corto <span style={{ color: "var(--color-text-subtle)", fontWeight: 400 }}>(opcional)</span>
+            <label className="form-label" htmlFor="giftNotes">
+              Preferencias y sugerencias de regalo <span style={{ color: "var(--color-text-subtle)", fontWeight: 400 }}>(opcional)</span>
             </label>
-            <input
-              id="nickname"
-              type="text"
+            <textarea
+              id="giftNotes"
               className="form-input"
-              placeholder="Ej: Juanca"
-              value={nickname}
-              onChange={(e) => setNickname(e.target.value)}
+              placeholder="Indica qué te gusta, qué no te gusta, tallas, libros, chocolates o preferencias..."
+              value={giftNotes}
+              onChange={(e) => setGiftNotes(e.target.value)}
               disabled={loading}
-              maxLength={30}
+              maxLength={300}
+              rows={3}
+              style={{ resize: "vertical", fontSize: "0.9rem", lineHeight: "1.45" }}
             />
+            <span
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "0.35rem",
+                fontSize: "0.78rem",
+                color: "var(--color-text-subtle)",
+                marginTop: "0.35rem",
+              }}
+            >
+              <Info size={14} style={{ flexShrink: 0 }} />
+              <span>Solo la persona que te saque en el sorteo podrá leer esta sugerencia.</span>
+            </span>
           </div>
 
           <div className="form-group">
             <label className="form-label" htmlFor="pin">
-              Crea tu PIN secreto de 4 dígitos <span style={{ color: "var(--color-primary)" }}>*</span>
+              Crea tu PIN personal de 4 dígitos <span style={{ color: "var(--color-primary)" }}>*</span>
             </label>
             <input
               id="pin"
@@ -220,7 +263,7 @@ export default function RegistrationView({
               inputMode="numeric"
               pattern="[0-9]*"
               className="form-input"
-              placeholder="•••• (4 números)"
+              placeholder="4 dígitos numéricos"
               value={pin}
               onChange={(e) => {
                 const val = e.target.value.replace(/\D/g, "").slice(0, 4);
@@ -238,7 +281,7 @@ export default function RegistrationView({
                 marginTop: "0.35rem",
               }}
             >
-              🔐 Solo tú conocerás este PIN. Lo usarás para abrir tu sobre secreto.
+              Tu PIN personal para descubrir el resultado confidencialmente.
             </span>
           </div>
 
@@ -249,11 +292,11 @@ export default function RegistrationView({
               disabled={loading || !name.trim() || pin.length !== 4}
             >
               {loading ? (
-                <>Registrando...</>
+                <>Procesando registro...</>
               ) : (
                 <>
-                  <Sparkles size={18} />
-                  <span>Registrarme</span>
+                  <Sparkles size={17} />
+                  <span>Completar Registro</span>
                 </>
               )}
             </button>
@@ -263,11 +306,11 @@ export default function RegistrationView({
             style={{
               textAlign: "center",
               marginTop: "1.25rem",
-              fontSize: "0.88rem",
+              fontSize: "0.85rem",
               color: "var(--color-text-subtle)",
             }}
           >
-            ❤️ <strong>{participantCount}</strong> {participantCount === 1 ? "participante registrado" : "participantes registrados"}
+            {participantCount} {participantCount === 1 ? "participante registrado" : "participantes registrados"}
           </div>
         </form>
       )}

@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getOrCreateEventConfig } from "@/lib/auth";
+import { getOrCreateConfig, findParticipantByNormalized, createNewParticipant, getParticipantStats } from "@/lib/dataService";
 import { normalizeName, isValidName, isValidPin, formatDisplayName } from "@/lib/normalization";
 import { hashSecret } from "@/lib/crypto";
 
@@ -8,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const config = await getOrCreateEventConfig();
+    const config = await getOrCreateConfig();
 
     if (config.state !== "REGISTRATION") {
       return NextResponse.json(
@@ -21,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, nickname, pin } = body;
+    const { name, giftNotes, pin } = body;
 
     // Validación de nombre
     const nameValidation = isValidName(name);
@@ -42,13 +41,12 @@ export async function POST(req: NextRequest) {
     }
 
     const normalized = normalizeName(name);
-    const cleanNickname = nickname && typeof nickname === "string" ? nickname.trim() : null;
+    const cleanGiftNotes =
+      giftNotes && typeof giftNotes === "string" ? giftNotes.trim().slice(0, 300) : null;
     const formattedName = formatDisplayName(name);
 
-    // Verificar si ya existe un participante con el mismo nombre normalizado
-    const existing = await prisma.participant.findUnique({
-      where: { normalizedName: normalized },
-    });
+    // Verificar duplicados
+    const existing = await findParticipantByNormalized(normalized);
 
     if (existing) {
       return NextResponse.json(
@@ -60,34 +58,33 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Hashear el PIN del usuario para almacenamiento seguro
+    // Hashear el PIN
     const pinHash = await hashSecret(pin);
+    const participantId = `part_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
 
-    const participant = await prisma.participant.create({
-      data: {
-        name: formattedName,
-        nickname: cleanNickname,
-        normalizedName: normalized,
-        pinHash,
-      },
+    const participant = await createNewParticipant({
+      id: participantId,
+      name: formattedName,
+      giftNotes: cleanGiftNotes,
+      normalizedName: normalized,
+      pinHash,
     });
 
-    const totalCount = await prisma.participant.count();
+    const stats = await getParticipantStats();
 
     return NextResponse.json({
       success: true,
-      message: "¡Ya estás dentro del sorteo! ❤️",
+      message: "Participante registrado exitosamente.",
       participant: {
         id: participant.id,
         name: participant.name,
-        nickname: participant.nickname,
+        giftNotes: participant.giftNotes,
       },
-      participantCount: totalCount,
+      participantCount: stats.total,
     });
   } catch (error: any) {
     console.error("Error al registrar participante:", error);
-    // Control de colisión única a nivel de base de datos
-    if (error?.code === "P2002") {
+    if (error?.code === "P2002" || error?.message?.includes("duplicate key")) {
       return NextResponse.json(
         {
           success: false,

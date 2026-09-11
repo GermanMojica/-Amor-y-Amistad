@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { verifyAdminAuth, getOrCreateEventConfig } from "@/lib/auth";
+import { verifyAdminAuth } from "@/lib/auth";
+import { getParticipantStats, updateEventState } from "@/lib/dataService";
 
 export const dynamic = "force-dynamic";
 
@@ -23,12 +23,9 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = await getOrCreateEventConfig();
-
-    // Validar transiciones de estado
     if (state === "READY") {
-      const count = await prisma.participant.count();
-      if (count < 2) {
+      const stats = await getParticipantStats();
+      if (stats.total < 2) {
         return NextResponse.json(
           {
             success: false,
@@ -39,15 +36,12 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const updated = await prisma.eventConfig.update({
-      where: { id: config.id },
-      data: { state },
-    });
+    await updateEventState(state);
 
     return NextResponse.json({
       success: true,
-      state: updated.state,
-      message: `Estado actualizado a ${updated.state}.`,
+      state: state,
+      message: `Estado actualizado a ${state}.`,
     });
   } catch (error) {
     console.error("Error al actualizar estado (admin):", error);

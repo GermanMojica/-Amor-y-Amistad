@@ -1,13 +1,12 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Gift, Lock, Sparkles, AlertCircle, Eye, EyeOff, CheckCircle, HeartHandshake, PartyPopper } from "lucide-react";
+import { Gift, Lock, Sparkles, AlertCircle, Eye, EyeOff, Lightbulb, ShieldCheck, Loader2 } from "lucide-react";
 import confetti from "canvas-confetti";
 
 interface PublicParticipant {
   id: string;
   name: string;
-  nickname: string | null;
   drawCompleted: boolean;
 }
 
@@ -24,11 +23,11 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
   const [fetchingList, setFetchingList] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Estados de animación del descubrimiento
+  // Estados de revelación
   const [animationStep, setAnimationStep] = useState<"IDLE" | "PREPARING" | "REVEALED">("IDLE");
   const [revealedData, setRevealedData] = useState<{
     receiverName: string;
-    receiverNickname?: string | null;
+    receiverGiftNotes?: string | null;
   } | null>(null);
 
   const loadParticipants = async () => {
@@ -84,45 +83,26 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
         return;
       }
 
-      // Iniciar secuencia de animación mágica
       setAnimationStep("PREPARING");
 
       setTimeout(() => {
         setRevealedData({
           receiverName: data.receiver.name,
-          receiverNickname: data.receiver.nickname,
+          receiverGiftNotes: data.receiver.giftNotes,
         });
         setAnimationStep("REVEALED");
         setLoading(false);
 
-        // Explosión de confeti festivo
+        // Confeti elegante
         confetti({
-          particleCount: 120,
-          spread: 80,
+          particleCount: 80,
+          spread: 70,
           origin: { y: 0.55 },
-          colors: ["#E11D48", "#FDA4AF", "#F59E0B", "#FDE68A", "#FFFFFF"],
+          colors: ["#E11D48", "#6366F1", "#F43F5E", "#FFFFFF"],
         });
 
-        // Segundo estallido lateral
-        setTimeout(() => {
-          confetti({
-            particleCount: 60,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 },
-            colors: ["#E11D48", "#F59E0B", "#FDA4AF"],
-          });
-          confetti({
-            particleCount: 60,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 },
-            colors: ["#E11D48", "#F59E0B", "#FDA4AF"],
-          });
-        }, 300);
-
         onRevealed();
-      }, 1600);
+      }, 1200);
     } catch (err) {
       console.error("Error al revelar:", err);
       setErrorMessage("Error de conexión al obtener tu amigo secreto.");
@@ -135,60 +115,130 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
   return (
     <div className="glass-card">
       {animationStep === "PREPARING" && (
-        <div style={{ textAlign: "center", padding: "2rem 1rem" }}>
-          <div className="gift-box-wrapper">
-            <div className="gift-box shaking">
-              <div className="gift-box-ribbon-v" />
-              <div className="gift-box-ribbon-h" />
-              <div className="gift-bow" />
-            </div>
+        <div style={{ textAlign: "center", padding: "2.5rem 1rem" }}>
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "60px",
+              height: "60px",
+              borderRadius: "16px",
+              background: "rgba(225, 29, 72, 0.15)",
+              border: "1px solid rgba(225, 29, 72, 0.3)",
+              marginBottom: "1.25rem",
+            }}
+          >
+            <Loader2 size={30} color="#FDA4AF" style={{ animation: "spin 1.2s linear infinite" }} />
           </div>
-          <h2 style={{ fontSize: "1.5rem", color: "#FFFFFF", marginTop: "1rem" }}>
-            🎁 Preparando tu sorpresa...
+          <h2 style={{ fontSize: "1.4rem", color: "#FFFFFF" }}>
+            Consultando asignación confidencial...
           </h2>
-          <p style={{ color: "var(--color-accent-pink)", fontSize: "0.95rem", marginTop: "0.5rem" }}>
-            Abriendo el sobre secreto...
+          <p style={{ color: "var(--color-text-muted)", fontSize: "0.9rem", marginTop: "0.4rem" }}>
+            Verificando credenciales de seguridad
           </p>
+          <style jsx>{`
+            @keyframes spin {
+              from { transform: rotate(0deg); }
+              to { transform: rotate(360deg); }
+            }
+          `}</style>
         </div>
       )}
 
       {animationStep === "REVEALED" && revealedData && (
         <div className="secret-reveal-card">
-          <div style={{ display: "inline-block", marginBottom: "0.5rem" }}>
-            <PartyPopper size={42} color="#F59E0B" />
+          <div
+            style={{
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: "48px",
+              height: "48px",
+              borderRadius: "14px",
+              background: "rgba(225, 29, 72, 0.15)",
+              border: "1px solid rgba(225, 29, 72, 0.3)",
+              marginBottom: "1rem",
+            }}
+          >
+            <Gift size={24} color="#FDA4AF" />
           </div>
 
-          <h3 style={{ fontSize: "1.2rem", color: "var(--color-accent-pink)", fontWeight: 600 }}>
-            ❤️ Tu amigo secreto es:
+          <h3 style={{ fontSize: "1.1rem", color: "var(--color-text-muted)", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+            Tu amigo secreto asignado es:
           </h3>
 
           <div className="friend-name-display">
             {revealedData.receiverName}
           </div>
 
-          {revealedData.receiverNickname && (
-            <p style={{ fontSize: "1.1rem", color: "var(--color-accent-gold-light)", fontWeight: 600, marginBottom: "1rem" }}>
-              « {revealedData.receiverNickname} »
+          {/* Sección de gustos y pistas de regalo */}
+          {revealedData.receiverGiftNotes ? (
+            <div
+              style={{
+                marginTop: "1.25rem",
+                padding: "1.1rem",
+                background: "rgba(255, 255, 255, 0.03)",
+                border: "1px solid rgba(255, 255, 255, 0.08)",
+                borderRadius: "var(--radius-md)",
+                textAlign: "left",
+              }}
+            >
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "0.4rem",
+                  color: "#FDA4AF",
+                  fontWeight: 600,
+                  fontSize: "0.85rem",
+                  marginBottom: "0.4rem",
+                }}
+              >
+                <Lightbulb size={15} />
+                <span>Preferencias y sugerencias de regalo:</span>
+              </div>
+              <p
+                style={{
+                  color: "#F1F5F9",
+                  fontSize: "0.92rem",
+                  lineHeight: "1.45",
+                  fontStyle: "italic",
+                }}
+              >
+                "{revealedData.receiverGiftNotes}"
+              </p>
+            </div>
+          ) : (
+            <p
+              style={{
+                fontSize: "0.82rem",
+                color: "var(--color-text-subtle)",
+                marginTop: "0.5rem",
+              }}
+            >
+              (Este participante no registró notas o sugerencias específicas)
             </p>
           )}
 
           <div
             style={{
               marginTop: "1.5rem",
-              padding: "0.85rem 1rem",
-              background: "rgba(225, 29, 72, 0.15)",
-              border: "1px solid rgba(244, 63, 94, 0.35)",
+              padding: "0.75rem 1rem",
+              background: "rgba(225, 29, 72, 0.08)",
+              border: "1px solid rgba(225, 29, 72, 0.2)",
               borderRadius: "var(--radius-md)",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
-              gap: "0.5rem",
+              gap: "0.45rem",
               color: "#FDA4AF",
-              fontSize: "0.95rem",
-              fontWeight: 600,
+              fontSize: "0.85rem",
+              fontWeight: 500,
             }}
           >
-            <span>🤫 Recuerda mantenerlo en secreto.</span>
+            <ShieldCheck size={16} />
+            <span>Recuerda mantener el resultado en confidencialidad.</span>
           </div>
 
           <button
@@ -209,27 +259,27 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
 
       {animationStep === "IDLE" && (
         <div>
-          <div style={{ textAlign: "center", marginBottom: "1.5rem" }}>
+          <div style={{ textAlign: "center", marginBottom: "1.75rem" }}>
             <div
               style={{
                 display: "inline-flex",
                 alignItems: "center",
                 justifyContent: "center",
-                width: "56px",
-                height: "56px",
-                borderRadius: "50%",
-                background: "linear-gradient(135deg, rgba(245, 158, 11, 0.2), rgba(225, 29, 72, 0.2))",
-                border: "1px solid rgba(245, 158, 11, 0.3)",
-                marginBottom: "0.85rem",
+                width: "52px",
+                height: "52px",
+                borderRadius: "14px",
+                background: "linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(99, 102, 241, 0.15))",
+                border: "1px solid rgba(255, 255, 255, 0.1)",
+                marginBottom: "1rem",
               }}
             >
-              <Gift size={28} color="#FDE68A" />
+              <Gift size={24} color="#FDA4AF" />
             </div>
 
-            <h1 style={{ fontSize: "1.75rem", color: "#FFFFFF", marginBottom: "0.4rem" }}>
-              ¿Listo para descubrir tu persona? 🎁
+            <h1 style={{ fontSize: "1.75rem", color: "#FFFFFF", marginBottom: "0.35rem" }}>
+              Descubre a tu Amigo Secreto
             </h1>
-            <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem" }}>
+            <p style={{ color: "var(--color-text-muted)", fontSize: "0.92rem" }}>
               Selecciona tu nombre y confirma tu identidad con tu PIN.
             </p>
           </div>
@@ -254,10 +304,10 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
                 disabled={loading || fetchingList}
                 required
               >
-                <option value="">-- Elige quién eres --</option>
+                <option value="">-- Selecciona quién eres --</option>
                 {participants.map((p) => (
                   <option key={p.id} value={p.id}>
-                    {p.name} {p.nickname ? `(${p.nickname})` : ""} {p.drawCompleted ? "✓ (Ya consultado)" : ""}
+                    {p.name} {p.drawCompleted ? "(Consultado)" : ""}
                   </option>
                 ))}
               </select>
@@ -270,18 +320,18 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
                   background: "rgba(0,0,0,0.25)",
                   padding: "1rem",
                   borderRadius: "var(--radius-md)",
-                  border: "1px solid rgba(244, 63, 94, 0.2)",
+                  border: "1px solid var(--color-border)",
                   marginBottom: "1.25rem",
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.75rem", color: "var(--color-accent-gold-light)", fontWeight: 600, fontSize: "0.9rem" }}>
-                  <Lock size={16} />
-                  <span>🔐 Confirma que eres tú</span>
+                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.75rem", color: "var(--color-text-main)", fontWeight: 600, fontSize: "0.88rem" }}>
+                  <Lock size={15} color="#FDA4AF" />
+                  <span>Confirma tu identidad</span>
                 </div>
 
                 <div className="form-group" style={{ marginBottom: 0 }}>
                   <label className="form-label" htmlFor="participantPin">
-                    Ingresa tu PIN de 4 dígitos creado al registrarte
+                    Ingresa tu PIN de 4 dígitos
                   </label>
                   <div style={{ position: "relative" }}>
                     <input
@@ -317,7 +367,7 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
                       }}
                       tabIndex={-1}
                     >
-                      {showPin ? <EyeOff size={18} /> : <Eye size={18} />}
+                      {showPin ? <EyeOff size={17} /> : <Eye size={17} />}
                     </button>
                   </div>
                 </div>
@@ -329,8 +379,8 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
               className="btn-primary"
               disabled={loading || !selectedParticipantId || pin.length !== 4}
             >
-              <Sparkles size={18} />
-              <span>Descubrir mi persona</span>
+              <Sparkles size={17} />
+              <span>Ver Asignación</span>
             </button>
           </form>
         </div>

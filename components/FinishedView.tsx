@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trophy, Sparkles, RefreshCw } from "lucide-react";
+import { CheckCircle2, Sparkles, KeyRound } from "lucide-react";
 import DrawingView from "./DrawingView";
 
 interface FinishedViewProps {
@@ -21,7 +21,7 @@ export default function FinishedView({ participantCount }: FinishedViewProps) {
             onClick={() => setShowLookup(false)}
             className="btn-secondary"
           >
-            ← Volver a la pantalla de finalización
+            Volver a la pantalla de finalización
           </button>
         </div>
       </div>
@@ -35,39 +35,39 @@ export default function FinishedView({ participantCount }: FinishedViewProps) {
           display: "inline-flex",
           alignItems: "center",
           justifyContent: "center",
-          width: "64px",
-          height: "64px",
-          borderRadius: "50%",
-          background: "linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(245, 158, 11, 0.2))",
-          border: "1px solid rgba(16, 185, 129, 0.4)",
-          marginBottom: "1rem",
+          width: "56px",
+          height: "56px",
+          borderRadius: "16px",
+          background: "rgba(16, 185, 129, 0.12)",
+          border: "1px solid rgba(16, 185, 129, 0.3)",
+          marginBottom: "1.25rem",
         }}
       >
-        <Trophy size={32} color="#34D399" />
+        <CheckCircle2 size={28} color="#34D399" />
       </div>
 
-      <h1 style={{ fontSize: "1.85rem", color: "#FFFFFF", marginBottom: "0.5rem" }}>
-        🎉 ¡Sorteo completado!
+      <h1 style={{ fontSize: "1.75rem", color: "#FFFFFF", marginBottom: "0.5rem" }}>
+        Sorteo Completado
       </h1>
 
-      <p style={{ color: "var(--color-text-muted)", fontSize: "1rem", marginBottom: "1.5rem" }}>
-        Todos los participantes ya descubrieron a quién les corresponde.
+      <p style={{ color: "var(--color-text-muted)", fontSize: "0.95rem", marginBottom: "1.5rem" }}>
+        Todos los participantes han consultado a su amigo secreto asignado.
       </p>
 
       <div
         style={{
-          background: "rgba(16, 185, 129, 0.1)",
-          border: "1px solid rgba(16, 185, 129, 0.3)",
+          background: "rgba(16, 185, 129, 0.06)",
+          border: "1px solid rgba(16, 185, 129, 0.2)",
           borderRadius: "var(--radius-md)",
           padding: "1.25rem",
           marginBottom: "1.5rem",
         }}
       >
-        <p style={{ fontSize: "1.1rem", fontWeight: "700", color: "#6EE7B7" }}>
-          ✨ {participantCount} personas asignadas exitosamente
+        <p style={{ fontSize: "1.05rem", fontWeight: 700, color: "#6EE7B7" }}>
+          {participantCount} participantes asignados
         </p>
-        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "0.4rem" }}>
-          ¡Que empiece la celebración de Amor y Amistad! ❤️
+        <p style={{ fontSize: "0.85rem", color: "var(--color-text-muted)", marginTop: "0.35rem" }}>
+          El intercambio está listo para celebrarse.
         </p>
       </div>
 
@@ -76,8 +76,8 @@ export default function FinishedView({ participantCount }: FinishedViewProps) {
         onClick={() => setShowLookup(true)}
         className="btn-secondary"
       >
-        <Sparkles size={16} />
-        <span>¿Olvidaste quién te tocó? Consultar con tu PIN</span>
+        <KeyRound size={16} />
+        <span>Consultar nuevamente con PIN</span>
       </button>
     </div>
   );

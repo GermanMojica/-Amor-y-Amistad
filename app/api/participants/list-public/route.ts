@@ -1,21 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
+import { getPublicParticipantsList } from "@/lib/dataService";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const participants = await prisma.participant.findMany({
-      select: {
-        id: true,
-        name: true,
-        nickname: true,
-        drawCompleted: true,
-      },
-      orderBy: {
-        name: "asc",
-      },
-    });
+    const participants = await getPublicParticipantsList();
 
     return NextResponse.json({
       success: true,

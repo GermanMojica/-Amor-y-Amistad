@@ -1,28 +1,28 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
-import FloatingHearts from "@/components/FloatingHearts";
+import AmbientParticles from "@/components/AmbientParticles";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://sorteo-amor-amistad.vercel.app"),
-  title: "❤️ Sorteo de Amor y Amistad 🎁",
-  description: "Descubre a quién te toca en el sorteo de Amor y Amistad. ¡Rápido, seguro y divertido!",
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "https://sorteo-amigo-secreto.vercel.app"),
+  title: "Sorteo de Amigo Secreto",
+  description: "Descubre a quién te corresponde en el sorteo de Amigo Secreto y sus sugerencias de regalo.",
   openGraph: {
-    title: "❤️ Sorteo de Amor y Amistad",
-    description: "Descubre a quién te toca en el sorteo 🎁",
+    title: "Sorteo de Amigo Secreto",
+    description: "Descubre a quién te corresponde en el sorteo y sus sugerencias de regalo.",
     images: [
       {
         url: "/og-image.jpg",
         width: 1200,
         height: 630,
-        alt: "Sorteo de Amor y Amistad",
+        alt: "Sorteo de Amigo Secreto",
       },
     ],
     type: "website",
   },
   twitter: {
     card: "summary_large_image",
-    title: "❤️ Sorteo de Amor y Amistad",
-    description: "Descubre a quién te toca en el sorteo 🎁",
+    title: "Sorteo de Amigo Secreto",
+    description: "Descubre a quién te corresponde en el sorteo y sus sugerencias de regalo.",
     images: ["/og-image.jpg"],
   },
   icons: {
@@ -35,7 +35,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
-  themeColor: "#0F080C",
+  themeColor: "#090D14",
 };
 
 export default function RootLayout({
@@ -47,7 +47,7 @@ export default function RootLayout({
     <html lang="es">
       <body>
         <div className="ambient-bg" />
-        <FloatingHearts />
+        <AmbientParticles />
         <main className="app-container">{children}</main>
       </body>
     </html>

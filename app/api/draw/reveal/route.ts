@@ -1,13 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getOrCreateEventConfig } from "@/lib/auth";
+import {
+  getOrCreateConfig,
+  getParticipantWithAssignmentForReveal,
+  markParticipantAsRevealed,
+  getParticipantStats,
+  updateEventState,
+} from "@/lib/dataService";
 import { verifySecret } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
 export async function POST(req: NextRequest) {
   try {
-    const config = await getOrCreateEventConfig();
+    const config = await getOrCreateConfig();
 
     if (config.state !== "DRAWING" && config.state !== "FINISHED") {
       return NextResponse.json(
@@ -32,23 +37,8 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Buscar al participante
-    const participant = await prisma.participant.findUnique({
-      where: { id: participantId },
-      include: {
-        giverAssignment: {
-          include: {
-            receiver: {
-              select: {
-                id: true,
-                name: true,
-                nickname: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    // Buscar al participante y su asignación
+    const participant = await getParticipantWithAssignmentForReveal(participantId);
 
     if (!participant) {
       return NextResponse.json(
@@ -57,7 +47,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar el PIN del participante
+    // Verificar PIN
     const isPinValid = await verifySecret(pin, participant.pinHash);
     if (!isPinValid) {
       return NextResponse.json(
@@ -69,8 +59,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Verificar que exista una asignación
-    if (!participant.giverAssignment || !participant.giverAssignment.receiver) {
+    if (!participant.receiver) {
       return NextResponse.json(
         {
           success: false,
@@ -80,38 +69,23 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const assignedReceiver = participant.giverAssignment.receiver;
-
-    // Actualizar estado individual si es su primera vez
+    // Actualizar estado si es su primera vez
     if (!participant.drawCompleted) {
-      await prisma.participant.update({
-        where: { id: participant.id },
-        data: {
-          drawCompleted: true,
-          revealedAt: new Date(),
-        },
-      });
+      await markParticipantAsRevealed(participant.id);
 
-      // Verificar si todos los participantes ya finalizaron su sorteo
-      const unrevealedCount = await prisma.participant.count({
-        where: { drawCompleted: false },
-      });
-
-      if (unrevealedCount === 0) {
-        await prisma.eventConfig.update({
-          where: { id: config.id },
-          data: { state: "FINISHED" },
-        });
+      const stats = await getParticipantStats();
+      if (stats.total > 0 && stats.revealed >= stats.total) {
+        await updateEventState("FINISHED");
       }
     }
 
     return NextResponse.json({
       success: true,
       receiver: {
-        name: assignedReceiver.name,
-        nickname: assignedReceiver.nickname,
+        name: participant.receiver.name,
+        giftNotes: participant.receiver.giftNotes,
       },
-      message: "❤️ Recuerda mantenerlo en secreto.",
+      message: "Recuerda mantener el resultado en confidencialidad.",
     });
   } catch (error) {
     console.error("Error al revelar asignación:", error);

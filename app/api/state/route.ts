@@ -1,28 +1,20 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { getOrCreateEventConfig } from "@/lib/auth";
+import { getOrCreateConfig, getParticipantStats, updateEventState } from "@/lib/dataService";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const config = await getOrCreateEventConfig();
-    const participantCount = await prisma.participant.count();
-    const revealedCount = await prisma.participant.count({
-      where: { drawCompleted: true },
-    });
+    const config = await getOrCreateConfig();
+    const stats = await getParticipantStats();
 
-    // Auto-transicionar a FINISHED si estamos en DRAWING y todos han abierto su resultado
     let currentState = config.state;
     if (
       currentState === "DRAWING" &&
-      participantCount > 0 &&
-      revealedCount >= participantCount
+      stats.total > 0 &&
+      stats.revealed >= stats.total
     ) {
-      await prisma.eventConfig.update({
-        where: { id: config.id },
-        data: { state: "FINISHED" },
-      });
+      await updateEventState("FINISHED");
       currentState = "FINISHED";
     }
 
@@ -30,8 +22,8 @@ export async function GET() {
       success: true,
       state: currentState,
       title: config.title,
-      participantCount,
-      revealedCount,
+      participantCount: stats.total,
+      revealedCount: stats.revealed,
       minParticipantsRequired: 2,
     });
   } catch (error) {
