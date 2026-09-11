@@ -38,7 +38,7 @@ export async function getOrCreateConfig(): Promise<EventConfigDTO> {
 
     if (!data || error) {
       const defaultHash = await hashSecret(DEFAULT_ADMIN_PIN);
-      const { data: newConfig } = await supabase
+      const { data: newConfig, error: insertErr } = await supabase
         .from("event_config")
         .upsert({
           id: 1,
@@ -48,6 +48,10 @@ export async function getOrCreateConfig(): Promise<EventConfigDTO> {
         })
         .select()
         .single();
+
+      if (insertErr) {
+        console.error("Error al upsert event_config en Supabase:", insertErr);
+      }
 
       return {
         id: newConfig?.id || 1,
@@ -121,9 +125,14 @@ export async function updateEventState(
 export async function getParticipantStats() {
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
-    const { count: total } = await supabase
+    const { count: total, error: totalErr } = await supabase
       .from("participants")
       .select("*", { count: "exact", head: true });
+    
+    if (totalErr) {
+      console.error("Error al contar participantes en Supabase:", totalErr);
+    }
+
     const { count: revealed } = await supabase
       .from("participants")
       .select("*", { count: "exact", head: true })
@@ -151,18 +160,36 @@ export async function findParticipantByEmailOrNormalized(
 ) {
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
-    const { data } = await supabase
+
+    // 1. Buscar por email
+    const { data: byEmail, error: emailErr } = await supabase
       .from("participants")
       .select("id, name, email, normalized_name")
-      .or(`email.eq.${email},normalized_name.eq.${normalizedName}`)
+      .eq("email", email)
       .maybeSingle();
-    return data
-      ? {
-          id: data.id,
-          name: data.name,
-          email: data.email,
-        }
-      : null;
+
+    if (emailErr) {
+      console.error("Error buscando por email en Supabase:", emailErr);
+    }
+    if (byEmail) {
+      return { id: byEmail.id, name: byEmail.name, email: byEmail.email };
+    }
+
+    // 2. Buscar por nombre normalizado
+    const { data: byName, error: nameErr } = await supabase
+      .from("participants")
+      .select("id, name, email, normalized_name")
+      .eq("normalized_name", normalizedName)
+      .maybeSingle();
+
+    if (nameErr) {
+      console.error("Error buscando por nombre en Supabase:", nameErr);
+    }
+    if (byName) {
+      return { id: byName.id, name: byName.name, email: byName.email };
+    }
+
+    return null;
   }
 
   return await prisma.participant.findFirst({
@@ -200,7 +227,10 @@ export async function createNewParticipant(data: {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error) {
+      console.error("Error insertando participante en Supabase:", error);
+      throw error;
+    }
     return {
       id: created.id,
       name: created.name,
@@ -323,12 +353,22 @@ export async function getParticipantWithAssignmentByEmailOrId(identifier: string
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
     
-    // Buscar por email o id
-    const { data: participant } = await supabase
+    // 1. Buscar por email
+    let { data: participant } = await supabase
       .from("participants")
       .select("*")
-      .or(`email.eq.${cleanId},id.eq.${identifier}`)
+      .eq("email", cleanId)
       .maybeSingle();
+
+    // 2. Si no, buscar por id
+    if (!participant) {
+      const { data: pById } = await supabase
+        .from("participants")
+        .select("*")
+        .eq("id", identifier)
+        .maybeSingle();
+      participant = pById;
+    }
 
     if (!participant) return null;
 
