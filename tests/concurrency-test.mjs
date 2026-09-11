@@ -27,7 +27,7 @@ async function testConcurrency() {
     }
   }
 
-  // Registrar 10 participantes
+  // Registrar 10 participantes con email
   const participants = [];
   for (let i = 1; i <= 10; i++) {
     const res = await fetch(`${BASE_URL}/api/participants/register`, {
@@ -35,12 +35,18 @@ async function testConcurrency() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name: `Participante ${i}`,
+        email: `usuario${i}@correo.com`,
         giftNotes: `Preferencia ${i}`,
         pin: `100${i % 10}`,
       }),
     });
     const data = await res.json();
-    participants.push({ id: data.participant.id, pin: `100${i % 10}`, name: `Participante ${i}` });
+    participants.push({
+      id: data.participant.id,
+      email: `usuario${i}@correo.com`,
+      pin: `100${i % 10}`,
+      name: `Participante ${i}`,
+    });
   }
 
   console.log(`  [OK] 10 participantes registrados`);
@@ -61,12 +67,12 @@ async function testConcurrency() {
   console.log(`  [OK] Sorteo generado para los 10 participantes`);
 
   // Simular 10 descubrimientos EXACTAMENTE al mismo tiempo (Promise.all)
-  console.log("  [INFO] Disparando 10 peticiones de consulta simultaneas...");
+  console.log("  [INFO] Disparando 10 peticiones de consulta simultaneas por email...");
   const revealPromises = participants.map((p) =>
     fetch(`${BASE_URL}/api/draw/reveal`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ participantId: p.id, pin: p.pin }),
+      body: JSON.stringify({ email: p.email, pin: p.pin }),
     }).then((res) => res.json())
   );
 
@@ -79,7 +85,6 @@ async function testConcurrency() {
     assert.notStrictEqual(results[i].receiver.name, participants[i].name, "No puede ser autoasignado");
   }
 
-  // Verificar que los 10 receptores sean únicos
   const receiverNames = results.map((r) => r.receiver.name);
   const uniqueReceivers = new Set(receiverNames);
   assert.strictEqual(uniqueReceivers.size, 10, "Los 10 receptores deben ser distintos bajo alta concurrencia");

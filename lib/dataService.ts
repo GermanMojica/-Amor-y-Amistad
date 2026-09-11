@@ -13,6 +13,7 @@ export interface EventConfigDTO {
 export interface ParticipantDTO {
   id: string;
   name: string;
+  email: string;
   giftNotes: string | null;
   normalizedName: string;
   pinHash: string;
@@ -142,31 +143,43 @@ export async function getParticipantStats() {
 }
 
 /**
- * 4. Buscar participante por nombre normalizado
+ * 4. Buscar participante por email/usuario o nombre normalizado
  */
-export async function findParticipantByNormalized(normalizedName: string) {
+export async function findParticipantByEmailOrNormalized(
+  email: string,
+  normalizedName: string
+) {
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
     const { data } = await supabase
       .from("participants")
-      .select("id, name, normalized_name")
-      .eq("normalized_name", normalizedName)
+      .select("id, name, email, normalized_name")
+      .or(`email.eq.${email},normalized_name.eq.${normalizedName}`)
       .maybeSingle();
-    return data ? { id: data.id, name: data.name } : null;
+    return data
+      ? {
+          id: data.id,
+          name: data.name,
+          email: data.email,
+        }
+      : null;
   }
 
-  return await prisma.participant.findUnique({
-    where: { normalizedName },
-    select: { id: true, name: true },
+  return await prisma.participant.findFirst({
+    where: {
+      OR: [{ email }, { normalizedName }],
+    },
+    select: { id: true, name: true, email: true },
   });
 }
 
 /**
- * 5. Crear nuevo participante
+ * 5. Crear nuevo participante con email
  */
 export async function createNewParticipant(data: {
   id: string;
   name: string;
+  email: string;
   giftNotes: string | null;
   normalizedName: string;
   pinHash: string;
@@ -178,6 +191,7 @@ export async function createNewParticipant(data: {
       .insert({
         id: data.id,
         name: data.name,
+        email: data.email,
         gift_notes: data.giftNotes,
         normalized_name: data.normalizedName,
         pin_hash: data.pinHash,
@@ -190,6 +204,7 @@ export async function createNewParticipant(data: {
     return {
       id: created.id,
       name: created.name,
+      email: created.email,
       giftNotes: created.gift_notes,
     };
   }
@@ -198,6 +213,7 @@ export async function createNewParticipant(data: {
     data: {
       id: data.id,
       name: data.name,
+      email: data.email,
       giftNotes: data.giftNotes,
       normalizedName: data.normalizedName,
       pinHash: data.pinHash,
@@ -207,31 +223,33 @@ export async function createNewParticipant(data: {
   return {
     id: participant.id,
     name: participant.name,
+    email: participant.email,
     giftNotes: participant.giftNotes,
   };
 }
 
 /**
- * 6. Lista pública de participantes (para el selector)
+ * 6. Lista de participantes para el sorteo interno
  */
 export async function getPublicParticipantsList() {
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
     const { data, error } = await supabase
       .from("participants")
-      .select("id, name, draw_completed")
+      .select("id, name, email, draw_completed")
       .order("name", { ascending: true });
 
     if (error) throw error;
     return (data || []).map((p) => ({
       id: p.id,
       name: p.name,
+      email: p.email,
       drawCompleted: p.draw_completed,
     }));
   }
 
   const list = await prisma.participant.findMany({
-    select: { id: true, name: true, drawCompleted: true },
+    select: { id: true, name: true, email: true, drawCompleted: true },
     orderBy: { name: "asc" },
   });
   return list;
@@ -245,13 +263,14 @@ export async function getAdminParticipantsList() {
     const supabase = getSupabaseAdmin()!;
     const { data, error } = await supabase
       .from("participants")
-      .select("id, name, gift_notes, normalized_name, draw_completed, revealed_at, created_at")
+      .select("id, name, email, gift_notes, normalized_name, draw_completed, revealed_at, created_at")
       .order("created_at", { ascending: true });
 
     if (error) throw error;
     return (data || []).map((p) => ({
       id: p.id,
       name: p.name,
+      email: p.email,
       giftNotes: p.gift_notes,
       normalizedName: p.normalized_name,
       drawCompleted: p.draw_completed,
@@ -264,6 +283,7 @@ export async function getAdminParticipantsList() {
     select: {
       id: true,
       name: true,
+      email: true,
       giftNotes: true,
       normalizedName: true,
       drawCompleted: true,
@@ -295,17 +315,19 @@ export async function deleteParticipantById(participantId: string) {
 }
 
 /**
- * 9. Obtener participante y su receptor para revelación confidencial
+ * 9. Obtener participante por Email/Usuario para revelación confidencial
  */
-export async function getParticipantWithAssignmentForReveal(participantId: string) {
+export async function getParticipantWithAssignmentByEmailOrId(identifier: string) {
+  const cleanId = identifier.trim().toLowerCase();
+
   if (isSupabaseConfigured()) {
     const supabase = getSupabaseAdmin()!;
     
-    // Obtener participante
+    // Buscar por email o id
     const { data: participant } = await supabase
       .from("participants")
       .select("*")
-      .eq("id", participantId)
+      .or(`email.eq.${cleanId},id.eq.${identifier}`)
       .maybeSingle();
 
     if (!participant) return null;
@@ -314,13 +336,14 @@ export async function getParticipantWithAssignmentForReveal(participantId: strin
     const { data: assignment } = await supabase
       .from("draw_assignments")
       .select("receiver_id")
-      .eq("giver_id", participantId)
+      .eq("giver_id", participant.id)
       .maybeSingle();
 
     if (!assignment) {
       return {
         id: participant.id,
         name: participant.name,
+        email: participant.email,
         pinHash: participant.pin_hash,
         drawCompleted: participant.draw_completed,
         receiver: null,
@@ -330,32 +353,36 @@ export async function getParticipantWithAssignmentForReveal(participantId: strin
     // Obtener receptor
     const { data: receiver } = await supabase
       .from("participants")
-      .select("id, name, gift_notes")
+      .select("id, name, email, gift_notes")
       .eq("id", assignment.receiver_id)
       .maybeSingle();
 
     return {
       id: participant.id,
       name: participant.name,
+      email: participant.email,
       pinHash: participant.pin_hash,
       drawCompleted: participant.draw_completed,
       receiver: receiver
         ? {
             id: receiver.id,
             name: receiver.name,
+            email: receiver.email,
             giftNotes: receiver.gift_notes,
           }
         : null,
     };
   }
 
-  const p = await prisma.participant.findUnique({
-    where: { id: participantId },
+  const p = await prisma.participant.findFirst({
+    where: {
+      OR: [{ email: cleanId }, { id: identifier }],
+    },
     include: {
       giverAssignment: {
         include: {
           receiver: {
-            select: { id: true, name: true, giftNotes: true },
+            select: { id: true, name: true, email: true, giftNotes: true },
           },
         },
       },
@@ -367,12 +394,14 @@ export async function getParticipantWithAssignmentForReveal(participantId: strin
   return {
     id: p.id,
     name: p.name,
+    email: p.email,
     pinHash: p.pinHash,
     drawCompleted: p.drawCompleted,
     receiver: p.giverAssignment?.receiver
       ? {
           id: p.giverAssignment.receiver.id,
           name: p.giverAssignment.receiver.name,
+          email: p.giverAssignment.receiver.email,
           giftNotes: p.giverAssignment.receiver.giftNotes,
         }
       : null,

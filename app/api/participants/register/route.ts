@@ -1,6 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrCreateConfig, findParticipantByNormalized, createNewParticipant, getParticipantStats } from "@/lib/dataService";
-import { normalizeName, isValidName, isValidPin, formatDisplayName } from "@/lib/normalization";
+import {
+  getOrCreateConfig,
+  findParticipantByEmailOrNormalized,
+  createNewParticipant,
+  getParticipantStats,
+} from "@/lib/dataService";
+import {
+  normalizeName,
+  normalizeEmailOrUsername,
+  isValidName,
+  isValidEmailOrUsername,
+  isValidPin,
+  formatDisplayName,
+} from "@/lib/normalization";
 import { hashSecret } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +32,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { name, giftNotes, pin } = body;
+    const { name, email, giftNotes, pin } = body;
 
     // Validación de nombre
     const nameValidation = isValidName(name);
@@ -31,7 +43,16 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Validación de PIN
+    // Validación de correo o usuario
+    const emailValidation = isValidEmailOrUsername(email);
+    if (!emailValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: emailValidation.error },
+        { status: 400 }
+      );
+    }
+
+    // Validación de PIN / contraseña
     const pinValidation = isValidPin(pin);
     if (!pinValidation.valid) {
       return NextResponse.json(
@@ -41,18 +62,31 @@ export async function POST(req: NextRequest) {
     }
 
     const normalized = normalizeName(name);
+    const normalizedEmail = normalizeEmailOrUsername(email);
     const cleanGiftNotes =
       giftNotes && typeof giftNotes === "string" ? giftNotes.trim().slice(0, 300) : null;
     const formattedName = formatDisplayName(name);
 
-    // Verificar duplicados
-    const existing = await findParticipantByNormalized(normalized);
+    // Verificar duplicados por email o nombre
+    const existing = await findParticipantByEmailOrNormalized(
+      normalizedEmail,
+      normalized
+    );
 
     if (existing) {
+      if (existing.email === normalizedEmail) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: `El correo o usuario "${email}" ya se encuentra registrado.`,
+          },
+          { status: 409 }
+        );
+      }
       return NextResponse.json(
         {
           success: false,
-          error: `Ya existe un participante registrado con el nombre "${existing.name}". Si eres tú, recuerda tu PIN para cuando inicie el sorteo.`,
+          error: `Ya existe un participante registrado con el nombre "${existing.name}".`,
         },
         { status: 409 }
       );
@@ -65,6 +99,7 @@ export async function POST(req: NextRequest) {
     const participant = await createNewParticipant({
       id: participantId,
       name: formattedName,
+      email: normalizedEmail,
       giftNotes: cleanGiftNotes,
       normalizedName: normalized,
       pinHash,
@@ -78,6 +113,7 @@ export async function POST(req: NextRequest) {
       participant: {
         id: participant.id,
         name: participant.name,
+        email: participant.email,
         giftNotes: participant.giftNotes,
       },
       participantCount: stats.total,
@@ -88,7 +124,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "Este nombre ya se encuentra registrado en el sorteo.",
+          error: "Este correo o nombre ya se encuentra registrado.",
         },
         { status: 409 }
       );

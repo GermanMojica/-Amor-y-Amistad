@@ -1,11 +1,5 @@
 /**
- * Utilidades de normalización de nombres para prevención estricta de duplicados.
- * 
- * Ejemplos:
- * "Juan Pérez" -> "juan perez"
- * "  juan   perez  " -> "juan perez"
- * "JUAN PÉREZ" -> "juan perez"
- * "María José" -> "maria jose"
+ * Utilidades de normalización y validación.
  */
 
 export function normalizeName(input: string): string {
@@ -13,18 +7,22 @@ export function normalizeName(input: string): string {
 
   return input
     .trim()
-    // Normalizar a forma NFD para separar letras de acentos/diacríticos
     .normalize("NFD")
-    // Remover caracteres diacríticos (marcas de acento)
     .replace(/[\u0300-\u036f]/g, "")
-    // Convertir a minúsculas
     .toLowerCase()
-    // Reemplazar múltiples espacios o tabulaciones por un solo espacio
     .replace(/\s+/g, " ");
 }
 
 /**
- * Formatea un nombre para presentación con mayúscula inicial en cada palabra.
+ * Normaliza un correo electrónico o nombre de usuario (sin espacios, en minúsculas).
+ */
+export function normalizeEmailOrUsername(input: string): string {
+  if (!input) return "";
+  return input.trim().toLowerCase().replace(/\s+/g, "");
+}
+
+/**
+ * Formatea un nombre para presentación con mayúscula inicial.
  */
 export function formatDisplayName(input: string): string {
   if (!input) return "";
@@ -50,26 +48,39 @@ export function isValidName(input: string): { valid: boolean; error?: string } {
   if (trimmed.length < 2) {
     return { valid: false, error: "El nombre debe tener al menos 2 caracteres." };
   }
-  if (trimmed.length > 50) {
-    return { valid: false, error: "El nombre no puede exceder los 50 caracteres." };
-  }
-  // Verificar que tenga al menos un caracter alfanumérico
-  if (!/[a-zA-ZáéíóúÁÉÍÓÚñÑ]/.test(trimmed)) {
-    return { valid: false, error: "El nombre debe contener letras válidas." };
+  if (trimmed.length > 60) {
+    return { valid: false, error: "El nombre no puede exceder los 60 caracteres." };
   }
   return { valid: true };
 }
 
 /**
- * Valida un PIN de 4 dígitos.
+ * Valida un correo electrónico o nombre de usuario.
+ */
+export function isValidEmailOrUsername(input: string): { valid: boolean; error?: string } {
+  const clean = input ? input.trim().toLowerCase() : "";
+  if (!clean) {
+    return { valid: false, error: "Debes ingresar tu correo electrónico o un nombre de usuario." };
+  }
+  if (clean.length < 3) {
+    return { valid: false, error: "El correo o usuario debe tener al menos 3 caracteres." };
+  }
+  if (clean.length > 80) {
+    return { valid: false, error: "El correo o usuario no puede exceder los 80 caracteres." };
+  }
+  return { valid: true };
+}
+
+/**
+ * Valida un PIN o contraseña de acceso (mínimo 4 caracteres).
  */
 export function isValidPin(pin: string): { valid: boolean; error?: string } {
   if (!pin) {
-    return { valid: false, error: "Debes ingresar un PIN de 4 dígitos." };
+    return { valid: false, error: "Debes ingresar un PIN o clave de acceso." };
   }
   const cleanPin = pin.trim();
-  if (!/^\d{4}$/.test(cleanPin)) {
-    return { valid: false, error: "El PIN debe constar exactamente de 4 dígitos numéricos." };
+  if (cleanPin.length < 4) {
+    return { valid: false, error: "El PIN o clave debe tener al menos 4 caracteres." };
   }
   return { valid: true };
 }

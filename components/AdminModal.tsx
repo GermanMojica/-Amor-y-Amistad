@@ -13,6 +13,7 @@ import {
   Check,
   ShieldCheck,
   Info,
+  Mail,
 } from "lucide-react";
 
 interface AdminModalProps {
@@ -25,6 +26,7 @@ interface AdminModalProps {
 interface AdminParticipant {
   id: string;
   name: string;
+  email: string;
   giftNotes: string | null;
   normalizedName: string;
   drawCompleted: boolean;
@@ -433,27 +435,33 @@ export default function AdminModal({
                           <p style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.88rem" }}>
                             {p.name}
                           </p>
-                          <p style={{ fontSize: "0.75rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
-                            {p.drawCompleted ? "Asignación consultada" : "Pendiente de consultar"}
+                          <p style={{ fontSize: "0.75rem", color: "var(--color-accent-light)" }}>
+                            {p.email}
                           </p>
                         </div>
 
-                        {currentState === "REGISTRATION" || currentState === "READY" ? (
-                          <button
-                            type="button"
-                            onClick={() => handleDeleteParticipant(p.id, p.name)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#FDA4AF",
-                              cursor: "pointer",
-                              padding: "4px",
-                            }}
-                            title="Eliminar participante"
-                          >
-                            <Trash2 size={15} />
-                          </button>
-                        ) : null}
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
+                          <span style={{ fontSize: "0.72rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
+                            {p.drawCompleted ? "Consultado" : "Pendiente"}
+                          </span>
+
+                          {currentState === "REGISTRATION" || currentState === "READY" ? (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteParticipant(p.id, p.name)}
+                              style={{
+                                background: "none",
+                                border: "none",
+                                color: "#FDA4AF",
+                                cursor: "pointer",
+                                padding: "4px",
+                              }}
+                              title="Eliminar participante"
+                            >
+                              <Trash2 size={15} />
+                            </button>
+                          ) : null}
+                        </div>
                       </div>
 
                       {p.giftNotes && (

@@ -1,8 +1,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { Gift, Sparkles, CheckCircle2, AlertCircle, Info, KeyRound } from "lucide-react";
-import { isValidName, isValidPin } from "@/lib/normalization";
+import { Gift, Sparkles, CheckCircle2, AlertCircle, Info, KeyRound, Mail, User } from "lucide-react";
+import { isValidName, isValidEmailOrUsername, isValidPin } from "@/lib/normalization";
 import confetti from "canvas-confetti";
 
 interface RegistrationViewProps {
@@ -15,12 +15,14 @@ export default function RegistrationView({
   onParticipantRegistered,
 }: RegistrationViewProps) {
   const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [giftNotes, setGiftNotes] = useState("");
   const [pin, setPin] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [registeredUser, setRegisteredUser] = useState<{
     name: string;
+    email: string;
     giftNotes?: string | null;
   } | null>(null);
 
@@ -35,9 +37,15 @@ export default function RegistrationView({
       return;
     }
 
+    const emailCheck = isValidEmailOrUsername(email);
+    if (!emailCheck.valid) {
+      setErrorMessage(emailCheck.error || "Por favor ingresa tu correo o usuario.");
+      return;
+    }
+
     const pinCheck = isValidPin(pin);
     if (!pinCheck.valid) {
-      setErrorMessage(pinCheck.error || "El PIN debe tener 4 dígitos numéricos.");
+      setErrorMessage(pinCheck.error || "El PIN o clave debe tener al menos 4 dígitos.");
       return;
     }
 
@@ -49,6 +57,7 @@ export default function RegistrationView({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: name.trim(),
+          email: email.trim(),
           giftNotes: giftNotes.trim() || undefined,
           pin: pin.trim(),
         }),
@@ -62,7 +71,7 @@ export default function RegistrationView({
         return;
       }
 
-      // Celebración con confeti sutil
+      // Celebración con confeti
       confetti({
         particleCount: 70,
         spread: 60,
@@ -72,6 +81,7 @@ export default function RegistrationView({
 
       setRegisteredUser({
         name: data.participant.name,
+        email: data.participant.email,
         giftNotes: data.participant.giftNotes,
       });
 
@@ -86,6 +96,7 @@ export default function RegistrationView({
 
   const handleRegisterAnother = () => {
     setName("");
+    setEmail("");
     setGiftNotes("");
     setPin("");
     setErrorMessage(null);
@@ -141,6 +152,9 @@ export default function RegistrationView({
             <p style={{ fontSize: "1.15rem", fontWeight: "700", color: "#F8FAFC" }}>
               {registeredUser.name}
             </p>
+            <p style={{ fontSize: "0.88rem", color: "var(--color-accent-light)", marginTop: "0.2rem" }}>
+              Usuario: {registeredUser.email}
+            </p>
 
             {registeredUser.giftNotes && (
               <div
@@ -179,7 +193,7 @@ export default function RegistrationView({
             >
               <KeyRound size={16} style={{ flexShrink: 0, marginTop: "2px", color: "var(--color-accent-light)" }} />
               <span>
-                <strong>Importante:</strong> Guarda tu PIN de 4 dígitos. Lo necesitarás para consultar a tu amigo secreto una vez que inicie el sorteo.
+                <strong>Importante:</strong> Usa tu correo/usuario (<strong>{registeredUser.email}</strong>) y tu PIN para consultar a tu amigo secreto cuando inicie el sorteo.
               </span>
             </div>
           </div>
@@ -224,6 +238,34 @@ export default function RegistrationView({
           </div>
 
           <div className="form-group">
+            <label className="form-label" htmlFor="email">
+              Correo electrónico o Usuario <span style={{ color: "var(--color-primary)" }}>*</span>
+            </label>
+            <input
+              id="email"
+              type="text"
+              className="form-input"
+              placeholder="Ej: juan@correo.com o juanperez"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              disabled={loading}
+              autoComplete="username"
+              maxLength={80}
+              required
+            />
+            <span
+              style={{
+                display: "block",
+                fontSize: "0.78rem",
+                color: "var(--color-text-subtle)",
+                marginTop: "0.35rem",
+              }}
+            >
+              Identificador único que usarás para ingresar y ver tu resultado.
+            </span>
+          </div>
+
+          <div className="form-group">
             <label className="form-label" htmlFor="giftNotes">
               Preferencias y sugerencias de regalo <span style={{ color: "var(--color-text-subtle)", fontWeight: 400 }}>(opcional)</span>
             </label>
@@ -255,22 +297,17 @@ export default function RegistrationView({
 
           <div className="form-group">
             <label className="form-label" htmlFor="pin">
-              Crea tu PIN personal de 4 dígitos <span style={{ color: "var(--color-primary)" }}>*</span>
+              Crea tu PIN personal de acceso <span style={{ color: "var(--color-primary)" }}>*</span>
             </label>
             <input
               id="pin"
               type="password"
-              inputMode="numeric"
-              pattern="[0-9]*"
               className="form-input"
-              placeholder="4 dígitos numéricos"
+              placeholder="Mínimo 4 caracteres (números o clave)"
               value={pin}
-              onChange={(e) => {
-                const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                setPin(val);
-              }}
+              onChange={(e) => setPin(e.target.value)}
               disabled={loading}
-              maxLength={4}
+              maxLength={12}
               required
             />
             <span
@@ -281,7 +318,7 @@ export default function RegistrationView({
                 marginTop: "0.35rem",
               }}
             >
-              Tu PIN personal para descubrir el resultado confidencialmente.
+              Tu clave confidencial para abrir tu resultado del sorteo.
             </span>
           </div>
 
@@ -289,7 +326,7 @@ export default function RegistrationView({
             <button
               type="submit"
               className="btn-primary"
-              disabled={loading || !name.trim() || pin.length !== 4}
+              disabled={loading || !name.trim() || !email.trim() || pin.length < 4}
             >
               {loading ? (
                 <>Procesando registro...</>

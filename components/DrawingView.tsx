@@ -1,26 +1,18 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { Gift, Lock, Sparkles, AlertCircle, Eye, EyeOff, Lightbulb, ShieldCheck, Loader2 } from "lucide-react";
+import React, { useState } from "react";
+import { Gift, Lock, Sparkles, AlertCircle, Eye, EyeOff, Lightbulb, ShieldCheck, Loader2, Mail } from "lucide-react";
 import confetti from "canvas-confetti";
-
-interface PublicParticipant {
-  id: string;
-  name: string;
-  drawCompleted: boolean;
-}
 
 interface DrawingViewProps {
   onRevealed: () => void;
 }
 
 export default function DrawingView({ onRevealed }: DrawingViewProps) {
-  const [participants, setParticipants] = useState<PublicParticipant[]>([]);
-  const [selectedParticipantId, setSelectedParticipantId] = useState("");
+  const [email, setEmail] = useState("");
   const [pin, setPin] = useState("");
   const [showPin, setShowPin] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [fetchingList, setFetchingList] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   // Estados de revelación
@@ -30,36 +22,17 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
     receiverGiftNotes?: string | null;
   } | null>(null);
 
-  const loadParticipants = async () => {
-    try {
-      setFetchingList(true);
-      const res = await fetch("/api/participants/list-public");
-      const data = await res.json();
-      if (data.success) {
-        setParticipants(data.participants);
-      }
-    } catch (err) {
-      console.error("Error al cargar participantes:", err);
-    } finally {
-      setFetchingList(false);
-    }
-  };
-
-  useEffect(() => {
-    loadParticipants();
-  }, []);
-
   const handleReveal = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!selectedParticipantId) {
-      setErrorMessage("Por favor selecciona tu nombre de la lista.");
+    if (!email.trim()) {
+      setErrorMessage("Por favor ingresa tu correo electrónico o nombre de usuario.");
       return;
     }
 
-    if (!pin || pin.length !== 4) {
-      setErrorMessage("Por favor ingresa tu PIN de 4 dígitos.");
+    if (!pin || pin.length < 4) {
+      setErrorMessage("Por favor ingresa tu PIN o clave de acceso.");
       return;
     }
 
@@ -70,7 +43,7 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          participantId: selectedParticipantId,
+          email: email.trim(),
           pin: pin.trim(),
         }),
       });
@@ -78,7 +51,7 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setErrorMessage(data.error || "No se pudo verificar el PIN.");
+        setErrorMessage(data.error || "No se pudo verificar la información.");
         setLoading(false);
         return;
       }
@@ -109,8 +82,6 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
       setLoading(false);
     }
   };
-
-  const selectedParticipant = participants.find((p) => p.id === selectedParticipantId);
 
   return (
     <div className="glass-card">
@@ -246,8 +217,7 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
             onClick={() => {
               setAnimationStep("IDLE");
               setPin("");
-              setSelectedParticipantId("");
-              loadParticipants();
+              setEmail("");
             }}
             className="btn-secondary"
             style={{ marginTop: "1.5rem" }}
@@ -280,7 +250,7 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
               Descubre a tu Amigo Secreto
             </h1>
             <p style={{ color: "var(--color-text-muted)", fontSize: "0.92rem" }}>
-              Selecciona tu nombre y confirma tu identidad con tu PIN.
+              Ingresa con tu correo o usuario y tu PIN para ver a quién te tocó.
             </p>
           </div>
 
@@ -293,95 +263,72 @@ export default function DrawingView({ onRevealed }: DrawingViewProps) {
             )}
 
             <div className="form-group">
-              <label className="form-label" htmlFor="participantSelect">
-                Selecciona tu nombre <span style={{ color: "var(--color-primary)" }}>*</span>
+              <label className="form-label" htmlFor="loginEmail">
+                Correo electrónico o Usuario <span style={{ color: "var(--color-primary)" }}>*</span>
               </label>
-              <select
-                id="participantSelect"
-                className="form-select"
-                value={selectedParticipantId}
-                onChange={(e) => setSelectedParticipantId(e.target.value)}
-                disabled={loading || fetchingList}
-                required
-              >
-                <option value="">-- Selecciona quién eres --</option>
-                {participants.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.name} {p.drawCompleted ? "(Consultado)" : ""}
-                  </option>
-                ))}
-              </select>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="loginEmail"
+                  type="text"
+                  className="form-input"
+                  placeholder="Tu correo o usuario registrado"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={loading}
+                  autoComplete="username"
+                  required
+                />
+              </div>
             </div>
 
-            {selectedParticipant && (
-              <div
-                style={{
-                  animation: "slideUp 0.2s ease-out",
-                  background: "rgba(0,0,0,0.25)",
-                  padding: "1rem",
-                  borderRadius: "var(--radius-md)",
-                  border: "1px solid var(--color-border)",
-                  marginBottom: "1.25rem",
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: "0.4rem", marginBottom: "0.75rem", color: "var(--color-text-main)", fontWeight: 600, fontSize: "0.88rem" }}>
-                  <Lock size={15} color="#FDA4AF" />
-                  <span>Confirma tu identidad</span>
-                </div>
-
-                <div className="form-group" style={{ marginBottom: 0 }}>
-                  <label className="form-label" htmlFor="participantPin">
-                    Ingresa tu PIN de 4 dígitos
-                  </label>
-                  <div style={{ position: "relative" }}>
-                    <input
-                      id="participantPin"
-                      type={showPin ? "text" : "password"}
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      className="form-input"
-                      placeholder="••••"
-                      value={pin}
-                      onChange={(e) => {
-                        const val = e.target.value.replace(/\D/g, "").slice(0, 4);
-                        setPin(val);
-                      }}
-                      maxLength={4}
-                      disabled={loading}
-                      style={{ paddingRight: "2.75rem", letterSpacing: showPin ? "0" : "0.3em", fontSize: "1.1rem" }}
-                      required
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPin(!showPin)}
-                      style={{
-                        position: "absolute",
-                        right: "10px",
-                        top: "50%",
-                        transform: "translateY(-50%)",
-                        background: "none",
-                        border: "none",
-                        color: "var(--color-text-subtle)",
-                        cursor: "pointer",
-                        padding: "4px",
-                      }}
-                      tabIndex={-1}
-                    >
-                      {showPin ? <EyeOff size={17} /> : <Eye size={17} />}
-                    </button>
-                  </div>
-                </div>
+            <div className="form-group">
+              <label className="form-label" htmlFor="loginPin">
+                PIN o Clave de acceso <span style={{ color: "var(--color-primary)" }}>*</span>
+              </label>
+              <div style={{ position: "relative" }}>
+                <input
+                  id="loginPin"
+                  type={showPin ? "text" : "password"}
+                  className="form-input"
+                  placeholder="Tu clave de acceso"
+                  value={pin}
+                  onChange={(e) => setPin(e.target.value)}
+                  maxLength={12}
+                  disabled={loading}
+                  style={{ paddingRight: "2.75rem" }}
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPin(!showPin)}
+                  style={{
+                    position: "absolute",
+                    right: "10px",
+                    top: "50%",
+                    transform: "translateY(-50%)",
+                    background: "none",
+                    border: "none",
+                    color: "var(--color-text-subtle)",
+                    cursor: "pointer",
+                    padding: "4px",
+                  }}
+                  tabIndex={-1}
+                >
+                  {showPin ? <EyeOff size={17} /> : <Eye size={17} />}
+                </button>
               </div>
-            )}
+            </div>
 
-            <button
-              type="submit"
-              className="btn-primary"
-              disabled={loading || !selectedParticipantId || pin.length !== 4}
-            >
-              <Sparkles size={17} />
-              <span>Ver Asignación</span>
-            </button>
+            <div style={{ marginTop: "1.5rem" }}>
+              <button
+                type="submit"
+                className="btn-primary"
+                disabled={loading || !email.trim() || pin.length < 4}
+              >
+                <Sparkles size={17} />
+                <span>Ver Asignación</span>
+              </button>
+            </div>
           </form>
         </div>
       )}

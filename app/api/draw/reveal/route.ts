@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
   getOrCreateConfig,
-  getParticipantWithAssignmentForReveal,
+  getParticipantWithAssignmentByEmailOrId,
   markParticipantAsRevealed,
   getParticipantStats,
   updateEventState,
 } from "@/lib/dataService";
 import { verifySecret } from "@/lib/crypto";
+import { normalizeEmailOrUsername } from "@/lib/normalization";
 
 export const dynamic = "force-dynamic";
 
@@ -25,24 +26,30 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { participantId, pin } = body;
+    const { email, identifier, participantId, pin } = body;
+    const userLookup = email || identifier || participantId;
 
-    if (!participantId || !pin) {
+    if (!userLookup || !pin) {
       return NextResponse.json(
         {
           success: false,
-          error: "Debes seleccionar tu nombre e ingresar tu PIN de seguridad.",
+          error: "Debes ingresar tu correo o usuario y tu PIN de seguridad.",
         },
         { status: 400 }
       );
     }
 
-    // Buscar al participante y su asignación
-    const participant = await getParticipantWithAssignmentForReveal(participantId);
+    const cleanLookup = normalizeEmailOrUsername(userLookup);
+
+    // Buscar al participante por correo/usuario o id
+    const participant = await getParticipantWithAssignmentByEmailOrId(cleanLookup);
 
     if (!participant) {
       return NextResponse.json(
-        { success: false, error: "Participante no encontrado." },
+        {
+          success: false,
+          error: "No se encontró ningún participante registrado con ese correo o usuario.",
+        },
         { status: 404 }
       );
     }
@@ -53,7 +60,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: "PIN incorrecto. Ingresa el PIN de 4 dígitos que elegiste al registrarte.",
+          error: "PIN o clave incorrecta. Ingresa la clave que definiste al registrarte.",
         },
         { status: 401 }
       );

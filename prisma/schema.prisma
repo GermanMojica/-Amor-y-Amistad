@@ -19,9 +19,10 @@ model EventConfig {
 model Participant {
   id             String    @id @default(cuid())
   name           String
-  giftNotes      String?   // Gustos, preferencias, qué le gusta o qué no le gusta
+  email          String    @unique // Correo electrónico o nombre de usuario único
+  giftNotes      String?   // Gustos, preferencias, qué le gusta o qué no
   normalizedName String    @unique
-  pinHash        String    // Hash del PIN de seguridad de 4 dígitos
+  pinHash        String    // Hash del PIN o contraseña de seguridad
   drawCompleted  Boolean   @default(false)
   revealedAt     DateTime?
   createdAt      DateTime  @default(now())
