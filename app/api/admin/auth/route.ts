@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getOrCreateEventConfig } from "@/lib/auth";
+import { getOrCreateConfig } from "@/lib/dataService";
 import { verifySecret } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
@@ -16,28 +16,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const config = await getOrCreateEventConfig();
     const defaultEnvPin = process.env.ADMIN_SECRET_PIN || "2026";
 
-    let isValid = false;
-    if (config.adminPinHash) {
-      isValid = await verifySecret(pin, config.adminPinHash);
-    }
-    if (!isValid && pin === defaultEnvPin) {
-      isValid = true;
-    }
-
-    if (!isValid) {
-      return NextResponse.json(
-        { success: false, error: "PIN de organizador incorrecto." },
-        { status: 401 }
-      );
+    // 1. Verificación directa con PIN de entorno
+    if (pin === defaultEnvPin) {
+      return NextResponse.json({
+        success: true,
+        message: "Autenticación exitosa.",
+      });
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Autenticación exitosa.",
-    });
+    // 2. Verificación contra hash de base de datos
+    try {
+      const config = await getOrCreateConfig();
+      if (config.adminPinHash) {
+        const isValid = await verifySecret(pin, config.adminPinHash);
+        if (isValid) {
+          return NextResponse.json({
+            success: true,
+            message: "Autenticación exitosa.",
+          });
+        }
+      }
+    } catch (dbError) {
+      console.error("Error consultando config para auth admin:", dbError);
+    }
+
+    return NextResponse.json(
+      { success: false, error: "PIN de organizador incorrecto." },
+      { status: 401 }
+    );
   } catch (error) {
     console.error("Error en autenticación de admin:", error);
     return NextResponse.json(

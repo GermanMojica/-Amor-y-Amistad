@@ -1,28 +1,14 @@
 import { NextRequest } from "next/server";
-import { prisma } from "./db";
-import { hashSecret, verifySecret } from "./crypto";
+import { getOrCreateConfig } from "./dataService";
+import { verifySecret } from "./crypto";
 
 const DEFAULT_ADMIN_PIN = process.env.ADMIN_SECRET_PIN || "2026";
 
 /**
- * Obtiene o inicializa la configuración global del evento.
+ * Obtiene o inicializa la configuración global del evento a través de dataService.
  */
 export async function getOrCreateEventConfig() {
-  let config = await prisma.eventConfig.findFirst();
-
-  if (!config) {
-    const defaultHash = await hashSecret(DEFAULT_ADMIN_PIN);
-    config = await prisma.eventConfig.create({
-      data: {
-        id: 1,
-        title: "Sorteo de Amigo Secreto",
-        state: "REGISTRATION",
-        adminPinHash: defaultHash,
-      },
-    });
-  }
-
-  return config;
+  return await getOrCreateConfig();
 }
 
 /**
@@ -32,14 +18,19 @@ export async function verifyAdminAuth(req: NextRequest): Promise<boolean> {
   const authHeader = req.headers.get("x-admin-pin");
   if (!authHeader) return false;
 
-  const config = await getOrCreateEventConfig();
+  // 1. Verificación directa contra el PIN de entorno por rapidez y fiabilidad
+  if (authHeader === DEFAULT_ADMIN_PIN) return true;
 
-  // Comparar con el hash almacenado en base de datos
-  if (config.adminPinHash) {
-    const matches = await verifySecret(authHeader, config.adminPinHash);
-    if (matches) return true;
+  try {
+    const config = await getOrCreateConfig();
+    // Comparar con el hash almacenado en base de datos si existe
+    if (config.adminPinHash) {
+      const matches = await verifySecret(authHeader, config.adminPinHash);
+      if (matches) return true;
+    }
+  } catch (err) {
+    console.error("Error en verifyAdminAuth obteniendo config:", err);
   }
 
-  // Fallback con la variable de entorno
-  return authHeader === DEFAULT_ADMIN_PIN;
+  return false;
 }
