@@ -15,6 +15,9 @@ import {
   Info,
   Mail,
   KeyRound,
+  Eye,
+  EyeOff,
+  Gift,
 } from "lucide-react";
 
 interface AdminModalProps {
@@ -51,6 +54,11 @@ export default function AdminModal({
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showAssignments, setShowAssignments] = useState(false);
+  const [assignments, setAssignments] = useState<
+    { giver: { id: string; name: string; email: string }; receiver: { id: string; name: string; email: string; giftNotes: string | null } }[]
+  >([]);
+  const [loadingAssignments, setLoadingAssignments] = useState(false);
 
   const formatDate = (value: string | null) => {
     if (!value) return null;
@@ -259,6 +267,40 @@ export default function AdminModal({
     }
   };
 
+  const handleToggleAssignments = async () => {
+    if (showAssignments) {
+      setShowAssignments(false);
+      return;
+    }
+
+    if (
+      !confirm(
+        "Esto revela quién le tocó a quién a todos los participantes. ¿Confirmas que quieres verlo?"
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setLoadingAssignments(true);
+      setErrorMessage(null);
+      const res = await fetch("/api/admin/draw", {
+        headers: { "x-admin-pin": adminPin },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setAssignments(data.assignments);
+        setShowAssignments(true);
+      } else {
+        setErrorMessage(data.error || "No se pudieron cargar las asignaciones.");
+      }
+    } catch (err) {
+      setErrorMessage("Error al cargar las asignaciones.");
+    } finally {
+      setLoadingAssignments(false);
+    }
+  };
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.origin);
@@ -455,6 +497,61 @@ export default function AdminModal({
                 </div>
               )}
             </div>
+
+            {/* Asignaciones del sorteo */}
+            {(currentState === "DRAWING" || currentState === "FINISHED") && (
+              <div style={{ marginBottom: "1.5rem" }}>
+                <button
+                  type="button"
+                  onClick={handleToggleAssignments}
+                  className="btn-secondary"
+                  disabled={loadingAssignments}
+                  style={{ fontSize: "0.85rem", padding: "0.6rem" }}
+                >
+                  {showAssignments ? <EyeOff size={15} /> : <Eye size={15} />}
+                  <span>
+                    {loadingAssignments
+                      ? "Cargando..."
+                      : showAssignments
+                      ? "Ocultar quién le tocó a quién"
+                      : "Ver quién le tocó a quién"}
+                  </span>
+                </button>
+
+                {showAssignments && (
+                  <div
+                    style={{
+                      marginTop: "0.75rem",
+                      maxHeight: "min(40vh, 320px)",
+                      overflowY: "auto",
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "0.5rem",
+                    }}
+                  >
+                    {assignments.map((a) => (
+                      <div
+                        key={a.giver.id}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "0.6rem",
+                          padding: "0.6rem 0.8rem",
+                          background: "rgba(217, 119, 6, 0.08)",
+                          border: "1px solid rgba(245, 158, 11, 0.2)",
+                          borderRadius: "var(--radius-sm)",
+                          fontSize: "0.85rem",
+                        }}
+                      >
+                        <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{a.giver.name}</span>
+                        <Gift size={14} color="#F59E0B" style={{ flexShrink: 0 }} />
+                        <span style={{ color: "#FFFFFF", fontWeight: 600 }}>{a.receiver.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Participantes */}
             <div>

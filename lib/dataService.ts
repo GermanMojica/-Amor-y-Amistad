@@ -346,6 +346,43 @@ export async function resetParticipantPin(participantId: string, pinHash: string
 }
 
 /**
+ * 8b. Obtener todas las asignaciones del sorteo (Admin, solo lectura confidencial)
+ */
+export async function getAllDrawAssignments() {
+  if (isSupabaseConfigured()) {
+    const supabase = getSupabaseAdmin()!;
+    const { data, error } = await supabase
+      .from("draw_assignments")
+      .select(
+        "giver:giver_id(id, name, email), receiver:receiver_id(id, name, email, gift_notes)"
+      );
+
+    if (error) throw error;
+    return (data || []).map((row: any) => ({
+      giver: { id: row.giver.id, name: row.giver.name, email: row.giver.email },
+      receiver: {
+        id: row.receiver.id,
+        name: row.receiver.name,
+        email: row.receiver.email,
+        giftNotes: row.receiver.gift_notes,
+      },
+    }));
+  }
+
+  const assignments = await prisma.drawAssignment.findMany({
+    include: {
+      giver: { select: { id: true, name: true, email: true } },
+      receiver: { select: { id: true, name: true, email: true, giftNotes: true } },
+    },
+  });
+
+  return assignments.map((a) => ({
+    giver: a.giver,
+    receiver: a.receiver,
+  }));
+}
+
+/**
  * 8. Eliminar participante (Admin)
  */
 export async function deleteParticipantById(participantId: string) {

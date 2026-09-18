@@ -1,9 +1,32 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyAdminAuth } from "@/lib/auth";
-import { getPublicParticipantsList, persistDrawAssignments } from "@/lib/dataService";
+import {
+  getPublicParticipantsList,
+  persistDrawAssignments,
+  getAllDrawAssignments,
+} from "@/lib/dataService";
 import { generateDerangement, validateDrawAssignments } from "@/lib/drawAlgorithm";
 
 export const dynamic = "force-dynamic";
+
+export async function GET(req: NextRequest) {
+  try {
+    const isAuthorized = await verifyAdminAuth(req);
+    if (!isAuthorized) {
+      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
+    }
+
+    const assignments = await getAllDrawAssignments();
+
+    return NextResponse.json({ success: true, assignments });
+  } catch (error) {
+    console.error("Error al obtener asignaciones (admin):", error);
+    return NextResponse.json(
+      { success: false, error: "Error de servidor al obtener las asignaciones." },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(req: NextRequest) {
   try {
