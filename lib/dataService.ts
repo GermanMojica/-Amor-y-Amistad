@@ -325,6 +325,27 @@ export async function getAdminParticipantsList() {
 }
 
 /**
+ * 8b. Restablecer el PIN de un participante (Admin)
+ */
+export async function resetParticipantPin(participantId: string, pinHash: string) {
+  if (isSupabaseConfigured()) {
+    const supabase = getSupabaseAdmin()!;
+    const { error } = await supabase
+      .from("participants")
+      .update({ pin_hash: pinHash })
+      .eq("id", participantId);
+    if (error) throw error;
+    return true;
+  }
+
+  await prisma.participant.update({
+    where: { id: participantId },
+    data: { pinHash },
+  });
+  return true;
+}
+
+/**
  * 8. Eliminar participante (Admin)
  */
 export async function deleteParticipantById(participantId: string) {

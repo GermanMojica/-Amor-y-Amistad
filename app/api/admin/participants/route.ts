@@ -4,8 +4,11 @@ import {
   getOrCreateConfig,
   getAdminParticipantsList,
   deleteParticipantById,
+  resetParticipantPin,
   getParticipantStats,
 } from "@/lib/dataService";
+import { isValidPin } from "@/lib/normalization";
+import { hashSecret } from "@/lib/crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -71,6 +74,47 @@ export async function DELETE(req: NextRequest) {
     console.error("Error al eliminar participante (admin):", error);
     return NextResponse.json(
       { success: false, error: "Error de servidor al eliminar participante." },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(req: NextRequest) {
+  try {
+    const isAuthorized = await verifyAdminAuth(req);
+    if (!isAuthorized) {
+      return NextResponse.json({ success: false, error: "No autorizado." }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const { participantId, newPin } = body;
+
+    if (!participantId) {
+      return NextResponse.json(
+        { success: false, error: "ID de participante requerido." },
+        { status: 400 }
+      );
+    }
+
+    const pinValidation = isValidPin(newPin);
+    if (!pinValidation.valid) {
+      return NextResponse.json(
+        { success: false, error: pinValidation.error },
+        { status: 400 }
+      );
+    }
+
+    const pinHash = await hashSecret(newPin);
+    await resetParticipantPin(participantId, pinHash);
+
+    return NextResponse.json({
+      success: true,
+      message: "PIN restablecido correctamente.",
+    });
+  } catch (error) {
+    console.error("Error al restablecer PIN (admin):", error);
+    return NextResponse.json(
+      { success: false, error: "Error de servidor al restablecer el PIN." },
       { status: 500 }
     );
   }

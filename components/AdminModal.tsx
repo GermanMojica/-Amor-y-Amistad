@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Info,
   Mail,
+  KeyRound,
 } from "lucide-react";
 
 interface AdminModalProps {
@@ -117,6 +118,35 @@ export default function AdminModal({
       }
     } catch (err) {
       setErrorMessage("Error al eliminar participante.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResetPin = async (id: string, name: string) => {
+    const newPin = prompt(`Nuevo PIN para "${name}" (4 dígitos):`);
+    if (!newPin) return;
+
+    try {
+      setLoading(true);
+      setErrorMessage(null);
+      const res = await fetch("/api/admin/participants", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-pin": adminPin,
+        },
+        body: JSON.stringify({ participantId: id, newPin }),
+      });
+
+      const data = await res.json();
+      if (data.success) {
+        setSuccessMessage(`PIN de "${name}" restablecido. Comunícaselo de forma segura.`);
+      } else {
+        setErrorMessage(data.error || "No se pudo restablecer el PIN.");
+      }
+    } catch (err) {
+      setErrorMessage("Error al restablecer el PIN.");
     } finally {
       setLoading(false);
     }
@@ -444,6 +474,21 @@ export default function AdminModal({
                           <span style={{ fontSize: "0.72rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
                             {p.drawCompleted ? "Consultado" : "Pendiente"}
                           </span>
+
+                          <button
+                            type="button"
+                            onClick={() => handleResetPin(p.id, p.name)}
+                            style={{
+                              background: "none",
+                              border: "none",
+                              color: "#FBBF24",
+                              cursor: "pointer",
+                              padding: "4px",
+                            }}
+                            title="Restablecer PIN"
+                          >
+                            <KeyRound size={15} />
+                          </button>
 
                           {currentState === "REGISTRATION" || currentState === "READY" ? (
                             <button
