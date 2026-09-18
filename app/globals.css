@@ -397,6 +397,16 @@ h1, h2, h3, h4, .brand-title {
   animation: slideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
+.modal-content--wide {
+  max-width: 800px;
+}
+
+@media (max-width: 640px) {
+  .modal-content--wide {
+    max-width: 100%;
+  }
+}
+
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }

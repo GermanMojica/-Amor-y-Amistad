@@ -50,6 +50,26 @@ export default function AdminModal({
   const [participants, setParticipants] = useState<AdminParticipant[]>([]);
   const [showResetConfirm, setShowResetConfirm] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  const formatDate = (value: string | null) => {
+    if (!value) return null;
+    return new Date(value).toLocaleString("es-CO", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  };
+
+  const filteredParticipants = participants.filter((p) => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return true;
+    return (
+      p.name.toLowerCase().includes(query) ||
+      p.email.toLowerCase().includes(query)
+    );
+  });
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -251,7 +271,10 @@ export default function AdminModal({
 
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+      <div
+        className={`modal-content${isAuthenticated ? " modal-content--wide" : ""}`}
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Encabezado */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "1.25rem" }}>
           <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
@@ -435,43 +458,79 @@ export default function AdminModal({
 
             {/* Participantes */}
             <div>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.75rem" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "0.6rem", flexWrap: "wrap", gap: "0.4rem" }}>
                 <span style={{ fontSize: "0.85rem", fontWeight: 600, color: "#FFFFFF" }}>
-                  Participantes ({participants.length})
+                  Participantes ({filteredParticipants.length}
+                  {searchQuery.trim() ? ` de ${participants.length}` : ""})
                 </span>
                 <span style={{ fontSize: "0.75rem", color: "var(--color-text-subtle)" }}>
                   {participants.filter((p) => p.drawCompleted).length} consultaron su asignación
                 </span>
               </div>
 
+              {participants.length > 0 && (
+                <input
+                  type="text"
+                  className="form-input"
+                  placeholder="Buscar por nombre o correo..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  style={{ fontSize: "0.85rem", padding: "0.55rem 0.75rem", marginBottom: "0.75rem" }}
+                />
+              )}
+
               {participants.length === 0 ? (
                 <p style={{ fontSize: "0.82rem", color: "var(--color-text-subtle)", textAlign: "center", padding: "1.5rem" }}>
                   No hay participantes registrados todavía.
                 </p>
+              ) : filteredParticipants.length === 0 ? (
+                <p style={{ fontSize: "0.82rem", color: "var(--color-text-subtle)", textAlign: "center", padding: "1.5rem" }}>
+                  Ningún participante coincide con "{searchQuery}".
+                </p>
               ) : (
-                <div style={{ maxHeight: "220px", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                  {participants.map((p) => (
+                <div style={{ maxHeight: "min(50vh, 420px)", overflowY: "auto", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
+                  {filteredParticipants.map((p) => (
                     <div
                       key={p.id}
                       style={{
-                        padding: "0.65rem 0.8rem",
+                        padding: "0.75rem 0.9rem",
                         background: "rgba(0,0,0,0.3)",
                         borderRadius: "var(--radius-sm)",
                         border: "1px solid rgba(255,255,255,0.04)",
                       }}
                     >
-                      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                        <div>
-                          <p style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.88rem" }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: "0.75rem", flexWrap: "wrap" }}>
+                        <div style={{ minWidth: 0 }}>
+                          <p style={{ fontWeight: 600, color: "#FFFFFF", fontSize: "0.92rem" }}>
                             {p.name}
                           </p>
-                          <p style={{ fontSize: "0.75rem", color: "var(--color-accent-light)" }}>
+                          <p style={{ fontSize: "0.78rem", color: "var(--color-accent-light)", wordBreak: "break-all" }}>
                             {p.email}
                           </p>
+                          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap", marginTop: "0.3rem" }}>
+                            <span style={{ fontSize: "0.72rem", color: "var(--color-text-subtle)" }}>
+                              Registrado: {formatDate(p.createdAt)}
+                            </span>
+                            {p.revealedAt && (
+                              <span style={{ fontSize: "0.72rem", color: "var(--color-text-subtle)" }}>
+                                Consultado: {formatDate(p.revealedAt)}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
-                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                          <span style={{ fontSize: "0.72rem", color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: "0.5rem", flexShrink: 0 }}>
+                          <span
+                            style={{
+                              fontSize: "0.72rem",
+                              fontWeight: 600,
+                              color: p.drawCompleted ? "#34D399" : "var(--color-text-subtle)",
+                              background: p.drawCompleted ? "rgba(52, 211, 153, 0.1)" : "rgba(255,255,255,0.04)",
+                              padding: "0.2rem 0.5rem",
+                              borderRadius: "999px",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
                             {p.drawCompleted ? "Consultado" : "Pendiente"}
                           </span>
 
@@ -512,11 +571,11 @@ export default function AdminModal({
                       {p.giftNotes && (
                         <div
                           style={{
-                            marginTop: "0.35rem",
-                            fontSize: "0.76rem",
+                            marginTop: "0.5rem",
+                            fontSize: "0.78rem",
                             color: "var(--color-text-muted)",
                             background: "rgba(255,255,255,0.02)",
-                            padding: "0.3rem 0.5rem",
+                            padding: "0.4rem 0.6rem",
                             borderRadius: "4px",
                           }}
                         >
